@@ -1,7 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 880" width="1240" height="880" font-family="'Noto Sans TC','PingFang TC','Microsoft JhengHei','Noto Sans CJK TC',sans-serif" role="img" aria-label="Hermes Agent 架構：agent 不持憑證，所有內部呼叫與排程 job 都經 tool broker 這個單一出口">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 880" width="1240" height="880" font-family="'Noto Sans TC','PingFang TC','Microsoft JhengHei','Noto Sans CJK TC',sans-serif" role="img" aria-label="Hermes Agent 架構：agent 不持憑證，內部呼叫與多數排程 job 都經 tool broker">
 <defs><marker id="ao" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#f0883e"/></marker><marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6e7681"/></marker><marker id="at" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#3fb6c9"/></marker></defs>
 <rect width="1240" height="880" rx="8" fill="#0d1117"/>
-<text x="40" y="36" font-size="16" font-weight="700" fill="#e6edf3">Hermes Agent 架構：LLM 不持憑證，內部資源只有一個出口</text>
+<text x="40" y="36" font-size="16" font-weight="700" fill="#e6edf3">Hermes Agent 架構：LLM 不持憑證，內部資源統一經 broker 存取</text>
 <rect x="40" y="90" width="180" height="56" rx="6" fill="#161b22" stroke="#30363d"/>
 <text x="52" y="112" font-size="13" font-weight="700" fill="#e6edf3">On-call SRE</text>
 <text x="52" y="130" font-size="11" fill="#8b949e">人類</text>
@@ -72,9 +72,10 @@
 <rect x="980" y="400" width="220" height="70" rx="6" fill="#1c1a12" stroke="#9e6a03"/>
 <text x="992" y="422" font-size="13" font-weight="700" fill="#e6edf3">RDSec AI Endpoint</text>
 <text x="992" y="440" font-size="11" fill="#8b949e">LLM；失敗自動重試一次</text>
-<rect x="980" y="520" width="220" height="56" rx="6" fill="#161b22" stroke="#30363d"/>
+<rect x="980" y="520" width="220" height="72" rx="6" fill="#161b22" stroke="#30363d"/>
 <text x="992" y="542" font-size="13" font-weight="700" fill="#e6edf3">公開資料源</text>
-<text x="992" y="560" font-size="11" fill="#8b949e">HN · arXiv · RSS · advisories</text>
+<text x="992" y="560" font-size="11" fill="#8b949e">ai-digest 直連抓取</text>
+<text x="992" y="578" font-size="11" fill="#8b949e">HN · arXiv · RSS · advisories</text>
 <rect x="980" y="616" width="220" height="92" rx="6" fill="#161b22" stroke="#30363d"/>
 <text x="992" y="638" font-size="13" font-weight="700" fill="#e6edf3">直連（自帶 token）</text>
 <text x="992" y="656" font-size="11" fill="#8b949e">Jira ← pct-analyze</text>
