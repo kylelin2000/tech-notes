@@ -1,0 +1,123 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 880" width="1240" height="880" font-family="'Noto Sans TC','PingFang TC','Microsoft JhengHei','Noto Sans CJK TC',sans-serif" role="img" aria-label="Hermes Agent 架構：agent 不持憑證，所有內部呼叫與排程 job 都經 tool broker 這個單一出口">
+<defs><marker id="ao" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#f0883e"/></marker><marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6e7681"/></marker><marker id="at" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#3fb6c9"/></marker></defs>
+<rect width="1240" height="880" rx="8" fill="#0d1117"/>
+<text x="40" y="36" font-size="16" font-weight="700" fill="#e6edf3">Hermes Agent 架構：LLM 不持憑證，內部資源只有一個出口</text>
+<rect x="40" y="90" width="180" height="56" rx="6" fill="#161b22" stroke="#30363d"/>
+<text x="52" y="112" font-size="13" font-weight="700" fill="#e6edf3">On-call SRE</text>
+<text x="52" y="130" font-size="11" fill="#8b949e">人類</text>
+<rect x="40" y="200" width="180" height="56" rx="6" fill="#161b22" stroke="#30363d"/>
+<text x="52" y="222" font-size="13" font-weight="700" fill="#e6edf3">Telegram</text>
+<text x="52" y="240" font-size="11" fill="#8b949e">long-poll，互動調查</text>
+<rect x="40" y="320" width="180" height="56" rx="6" fill="#161b22" stroke="#30363d"/>
+<text x="52" y="342" font-size="13" font-weight="700" fill="#e6edf3">Browser</text>
+<text x="52" y="360" font-size="11" fill="#8b949e">Web UI，session 回顧</text>
+<polyline points="130,146 130,200" fill="none" stroke="#f0883e" stroke-width="1.6" marker-end="url(#ao)"/>
+<polyline points="60,146 60,172 30,172 30,348 40,348" fill="none" stroke="#f0883e" stroke-width="1.6" marker-end="url(#ao)"/>
+<circle cx="130" cy="176" r="9" fill="#f0883e"/>
+<text x="130" y="180" font-size="11" font-weight="700" fill="#0d1117" text-anchor="middle">1</text>
+<text x="232" y="290" font-size="11" fill="#c9d1d9" text-anchor="start"></text>
+<rect x="270" y="70" width="300" height="420" rx="10" fill="none" stroke="#3d444d" stroke-dasharray="6 5"/>
+<text x="284" y="92" font-size="12" font-weight="700" fill="#8b949e">hermes-agent pod　（不持任何內部憑證）</text>
+<rect x="286" y="100" width="268" height="60" rx="6" fill="#161b22" stroke="#30363d"/>
+<text x="298" y="122" font-size="13" font-weight="700" fill="#e6edf3">gateway run</text>
+<text x="298" y="140" font-size="11" fill="#8b949e">接 Telegram；行為由 SOUL.md 定義</text>
+<rect x="286" y="180" width="268" height="60" rx="6" fill="#161b22" stroke="#30363d"/>
+<text x="298" y="202" font-size="13" font-weight="700" fill="#e6edf3">hermes-dashboard</text>
+<text x="298" y="220" font-size="11" fill="#8b949e">sidecar，:9119 Web UI，共用 PVC</text>
+<rect x="286" y="260" width="268" height="56" rx="6" fill="#161b22" stroke="#30363d"/>
+<text x="298" y="282" font-size="13" font-weight="700" fill="#e6edf3">state-janitor</text>
+<text x="298" y="300" font-size="11" fill="#8b949e">每日清過期 session</text>
+<rect x="286" y="336" width="268" height="56" rx="6" fill="#161b22" stroke="#30363d" stroke-dasharray="5 4"/>
+<text x="298" y="358" font-size="13" font-weight="700" fill="#e6edf3">agent-usage-reporter</text>
+<text x="298" y="376" font-size="11" fill="#8b949e">sidecar，預設關閉（opt-in）</text>
+<text x="286" y="426" font-size="11" fill="#8b949e">永不刪：state.db · config · SOUL.md</text>
+<text x="286" y="446" font-size="11" fill="#8b949e">gateway 降權為 uid 10000</text>
+<polyline points="220,228 238,228 238,130 286,130" fill="none" stroke="#f0883e" stroke-width="1.6" marker-end="url(#ao)"/>
+<polyline points="220,348 260,348 260,210 286,210" fill="none" stroke="#f0883e" stroke-width="1.6" marker-end="url(#ao)"/>
+<text x="241" y="322" font-size="11" fill="#c9d1d9" text-anchor="middle"></text>
+<text x="130" y="394" font-size="10" fill="#8b949e" text-anchor="middle">RONE portal ingress → :9119</text>
+<rect x="650" y="70" width="270" height="260" rx="10" fill="#0f2a31" stroke="#2f7f8f" stroke-dasharray="6 5"/>
+<text x="664" y="92" font-size="12" font-weight="700" fill="#3fb6c9">hermes-tool-broker pod</text>
+<rect x="666" y="100" width="238" height="92" rx="6" fill="#12303a" stroke="#3fb6c9"/>
+<text x="678" y="122" font-size="13" font-weight="700" fill="#e6edf3">MCP server :9200</text>
+<text x="678" y="140" font-size="11" fill="#8b949e">持有所有內部憑證</text>
+<text x="678" y="160" font-size="11" fill="#9fd9e3">tool allowlist · 稽核軌跡</text>
+<text x="678" y="178" font-size="11" fill="#9fd9e3">Jira 僅釘死的 saved filter</text>
+<rect x="666" y="210" width="238" height="56" rx="6" fill="#161b22" stroke="#30363d"/>
+<text x="678" y="232" font-size="13" font-weight="700" fill="#e6edf3">report-janitor</text>
+<text x="678" y="250" font-size="11" fill="#8b949e">sidecar，清報表與逐字稿；不動 audit</text>
+<text x="666" y="298" font-size="11" fill="#8b949e">Secret 逐 pod 隔離；NetworkPolicy：</text>
+<text x="666" y="314" font-size="11" fill="#8b949e">broker 是唯一內部 egress</text>
+<polyline points="554,130 666,130" fill="none" stroke="#f0883e" stroke-width="1.6" marker-end="url(#ao)"/>
+<text x="610" y="122" font-size="11" fill="#f0883e" text-anchor="middle">MCP</text>
+<circle cx="610" cy="150" r="9" fill="#f0883e"/>
+<text x="610" y="154" font-size="11" font-weight="700" fill="#0d1117" text-anchor="middle">2</text>
+<rect x="980" y="70" width="220" height="260" rx="10" fill="none" stroke="#3d444d" stroke-dasharray="6 5"/>
+<text x="994" y="92" font-size="12" font-weight="700" fill="#8b949e">內部資源（憑證只在 broker）</text>
+<rect x="996" y="98" width="188" height="44" rx="6" fill="#161b22" stroke="#30363d"/>
+<text x="1008" y="125.0" font-size="13" font-weight="700" fill="#e6edf3">Grafana Loki</text>
+<rect x="996" y="154" width="188" height="44" rx="6" fill="#161b22" stroke="#30363d"/>
+<text x="1008" y="181.0" font-size="13" font-weight="700" fill="#e6edf3">MS Graph / Teams</text>
+<rect x="996" y="210" width="188" height="44" rx="6" fill="#161b22" stroke="#30363d"/>
+<text x="1008" y="237.0" font-size="13" font-weight="700" fill="#e6edf3">GitHub</text>
+<rect x="996" y="266" width="188" height="44" rx="6" fill="#161b22" stroke="#30363d"/>
+<text x="1008" y="293.0" font-size="13" font-weight="700" fill="#e6edf3">Jira</text>
+<polyline points="904,146 950,146 950,200 996,200" fill="none" stroke="#3fb6c9" stroke-width="1.6" marker-end="url(#at)"/>
+<polyline points="950,146 950,120 996,120" fill="none" stroke="#3fb6c9" stroke-width="1.6" marker-end="url(#at)"/>
+<polyline points="950,200 950,176 996,176" fill="none" stroke="#3fb6c9" stroke-width="1.6" marker-end="url(#at)"/>
+<polyline points="950,200 950,288 996,288" fill="none" stroke="#3fb6c9" stroke-width="1.6" marker-end="url(#at)"/>
+<text x="928" y="138" font-size="10" fill="#3fb6c9" text-anchor="middle">HTTPS</text>
+<circle cx="928" cy="118" r="9" fill="#f0883e"/>
+<text x="928" y="122" font-size="11" font-weight="700" fill="#0d1117" text-anchor="middle">4</text>
+<rect x="980" y="400" width="220" height="70" rx="6" fill="#1c1a12" stroke="#9e6a03"/>
+<text x="992" y="422" font-size="13" font-weight="700" fill="#e6edf3">RDSec AI Endpoint</text>
+<text x="992" y="440" font-size="11" fill="#8b949e">LLM；失敗自動重試一次</text>
+<rect x="980" y="520" width="220" height="56" rx="6" fill="#161b22" stroke="#30363d"/>
+<text x="992" y="542" font-size="13" font-weight="700" fill="#e6edf3">公開資料源</text>
+<text x="992" y="560" font-size="11" fill="#8b949e">HN · arXiv · RSS · advisories</text>
+<rect x="980" y="616" width="220" height="92" rx="6" fill="#161b22" stroke="#30363d"/>
+<text x="992" y="638" font-size="13" font-weight="700" fill="#e6edf3">直連（自帶 token）</text>
+<text x="992" y="656" font-size="11" fill="#8b949e">Jira ← pct-analyze</text>
+<text x="992" y="686" font-size="11" fill="#8b949e">GitHub ← loop-triage、</text>
+<text x="992" y="702" font-size="11" fill="#8b949e">feedback-triage 開 issue</text>
+<polyline points="554,430 980,430" fill="none" stroke="#6e7681" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#ag)"/>
+<text x="770" y="424" font-size="10" fill="#8b949e" text-anchor="middle">推理（agent 與 6 個 LLM job 都直連 LLM）</text>
+<rect x="270" y="520" width="650" height="312" rx="10" fill="none" stroke="#3d444d" stroke-dasharray="6 5"/>
+<text x="284" y="542" font-size="12" font-weight="700" fill="#8b949e">CronJobs　（LLM 只做判斷，格式由固定 prompt + 純 Python 渲染）</text>
+<rect x="286" y="556" width="196" height="60" rx="6" fill="#161b22" stroke="#30363d"/>
+<text x="298" y="578" font-size="13" font-weight="700" fill="#e6edf3">xsp-digest</text>
+<text x="298" y="596" font-size="11" fill="#8b949e">每日 · XSP 錯誤摘要</text>
+<rect x="494" y="556" width="196" height="60" rx="6" fill="#161b22" stroke="#30363d"/>
+<text x="506" y="578" font-size="13" font-weight="700" fill="#e6edf3">pct-analyze</text>
+<text x="506" y="596" font-size="11" fill="#8b949e">每時 · PCT 根因分析</text>
+<rect x="702" y="556" width="196" height="60" rx="6" fill="#161b22" stroke="#30363d"/>
+<text x="714" y="578" font-size="13" font-weight="700" fill="#e6edf3">xsp-regression</text>
+<text x="714" y="596" font-size="11" fill="#8b949e">每數小時 · build 回歸偵測</text>
+<rect x="286" y="632" width="196" height="60" rx="6" fill="#161b22" stroke="#30363d"/>
+<text x="298" y="654" font-size="13" font-weight="700" fill="#e6edf3">ai-digest</text>
+<text x="298" y="672" font-size="11" fill="#8b949e">每日 · AI 動態日報</text>
+<rect x="494" y="632" width="196" height="60" rx="6" fill="#161b22" stroke="#30363d"/>
+<text x="506" y="654" font-size="13" font-weight="700" fill="#e6edf3">ai-digest-weekly</text>
+<text x="506" y="672" font-size="11" fill="#8b949e">每週 · 週報，不用 LLM</text>
+<rect x="702" y="632" width="196" height="60" rx="6" fill="#161b22" stroke="#30363d"/>
+<text x="714" y="654" font-size="13" font-weight="700" fill="#e6edf3">feedback-triage</text>
+<text x="714" y="672" font-size="11" fill="#8b949e">每日 · 稽核軌跡 → issue</text>
+<rect x="286" y="712" width="612" height="96" rx="6" fill="#161b22" stroke="#30363d" stroke-dasharray="5 4"/>
+<text x="298" y="734" font-size="13" font-weight="700" fill="#e6edf3">loop-triage　每日</text>
+<text x="298" y="752" font-size="11" fill="#8b949e">repo 變動 → GitHub issue；逾期未解加 loop-stale 並升級一次</text>
+<text x="298" y="774" font-size="11" fill="#8b949e">CI gate 為 init step（只讀 clone token），與 Issues-write PAT 分離</text>
+<text x="298" y="794" font-size="11" fill="#8b949e">不經 broker，自帶 GitHub PAT</text>
+<polyline points="820,520 820,330" fill="none" stroke="#f0883e" stroke-width="1.6" marker-end="url(#ao)"/>
+<text x="834" y="470" font-size="11" fill="#f0883e" text-anchor="start">broker client</text>
+<circle cx="820" cy="500" r="9" fill="#f0883e"/>
+<text x="820" y="504" font-size="11" font-weight="700" fill="#0d1117" text-anchor="middle">3</text>
+<polyline points="920,575 945,575 945,450 980,450" fill="none" stroke="#6e7681" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#ag)"/>
+<polyline points="920,770 934,770 934,672 980,672" fill="none" stroke="#6e7681" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#ag)"/>
+<polyline points="920,662 958,662 958,548 980,548" fill="none" stroke="#6e7681" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#ag)"/>
+<line x1="40" y1="858" x2="72" y2="858" stroke="#f0883e" stroke-width="1.6" marker-end="url(#ao)"/>
+<text x="82" y="862" font-size="11" fill="#8b949e">經 broker</text>
+<line x1="160" y1="858" x2="192" y2="858" stroke="#6e7681" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#ag)"/>
+<text x="202" y="862" font-size="11" fill="#8b949e">直連（不經 broker）</text>
+<line x1="340" y1="858" x2="372" y2="858" stroke="#3fb6c9" stroke-width="1.6" marker-end="url(#at)"/>
+<text x="382" y="862" font-size="11" fill="#8b949e">broker 對內部資源 egress</text>
+</svg>
