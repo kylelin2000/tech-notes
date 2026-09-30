@@ -27,3 +27,7 @@
 
 - 安全：IAM Role、KMS、Secrets Manager、Security Group / NACL、GuardDuty、CloudTrail、AWS Config
 - 營運：CloudWatch、X-Ray、ECR、CodePipeline、Systems Manager、Auto Scaling
+
+---
+
+其他雲端的對應服務請見 [雲端服務對照：AWS / Azure / GCP](../service-mapping.md)。
