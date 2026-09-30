@@ -57,7 +57,7 @@
 | Job | 頻率 | 用途 | 與 broker 的關係 |
 | --- | --- | --- | --- |
 | `xsp-digest` | 每日 | XSP 錯誤摘要 → Teams | 純 broker client |
-| `pct-analyze` | 每時 | PCT 案件根因分析 → Teams | Jira 自帶 token；GitHub／Loki／Teams 經 broker |
+| `pct-analyze` | 每時 | PCT 案件根因分析 → Teams | Jira 自帶 token（broker 的 Jira 動詞是給 hermes agent 用）；GitHub／Loki／Teams 經 broker |
 | `xsp-regression` | 每數小時 | Build regression sentinel | Loki 查詢與 Teams 經 broker |
 | `ai-digest` | 每日 | AI 工程趨勢日報 → Teams | 公開資料直連；發送／歷史／計費經 broker |
 | `ai-digest-weekly` | 每週 | 日報的週報彙整 | 只讀 broker 歷史；**不用 LLM** |
@@ -73,7 +73,7 @@
 - **憑證隔離**：agent 沒有憑證；k8s Secret 逐 pod 隔離；NetworkPolicy 讓 broker 成為唯一內部 egress。
 - **容器降權**：gateway 以 root 啟動修正 `/run` 權限後降為非特權使用者（uid 10000）；dashboard sidecar 全程以 uid 10000 執行。
 - **Skill 拆分**：Skill 本質上是 prompt + script 的混合體。為了安全，把既有 skill 拆開——判斷與對話留在 LLM agent，會碰憑證與外部系統的腳本放進 Tool MCP。
-- **範圍收斂**：能力刻意設計得窄，例如 broker 的 Jira 動詞只讀一個**釘死的 saved filter**，不開放任意 JQL；預設 DENIED，需明確開關才啟用。
+- **範圍收斂**：能力刻意設計得窄，例如 broker 提供給 hermes agent 的 Jira 動詞只讀一個**釘死的 saved filter**，不開放任意 JQL；預設 DENIED，需明確開關才啟用。
 - **Multi-model council（Claude／GPT／Gemini 協作）**：opt-in 且 fail-closed。需明確啟用，且互動 agent 只在使用者明確要求時才呼叫；排程 job 各自有獨立開關，預設仍是單一模型。
 
 ### 5.2 CronJob 輸出一致
