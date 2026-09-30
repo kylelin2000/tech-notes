@@ -25,46 +25,9 @@
 
 ## 3. 整體架構
 
-```mermaid
-flowchart TB
-    human["人類 (on-call SRE)"]
-    tg["Telegram (long-poll)"]
-    web["瀏覽器 Web UI"]
-    human --> tg
-    human --> web
+![Hermes Agent 架構](assets/architecture.svg)
 
-    subgraph K8S["RDSec RONE (Kubernetes)"]
-        subgraph AGENT["hermes-agent pod（不持憑證）"]
-            gw["gateway run<br/>(接 Telegram)"]
-            dash["hermes-dashboard sidecar :9119"]
-            sj["state-janitor sidecar"]
-            aur["agent-usage-reporter sidecar (opt-in)"]
-        end
-        subgraph BROKER["hermes-tool-broker pod（持有所有內部憑證）"]
-            mcp["MCP server :9200"]
-            rj["report-janitor sidecar"]
-        end
-        subgraph CRONS["CronJobs"]
-            c1["xsp-digest"]
-            c2["pct-analyze"]
-            c3["xsp-regression"]
-            c4["ai-digest / ai-digest-weekly"]
-            c5["feedback-triage"]
-            c6["loop-triage"]
-        end
-        gw -- "MCP" --> mcp
-        c1 & c2 & c3 & c4 & c5 -- "broker client" --> mcp
-    end
-
-    tg --> gw
-    web -- "RONE portal ingress" --> dash
-
-    gw -.-> llm["RDSec AI Endpoint (LLM)"]
-    CRONS -.-> llm
-    mcp --> ext["Grafana Loki / MS Graph・Teams・SharePoint / GitHub / Jira"]
-    c4 -.-> pub["公開資料源 (HN / arXiv / RSS / advisories)"]
-    c6 -.-> gh["GitHub (自帶 PAT)"]
-```
+橘色實線是經 broker 的呼叫，灰色虛線是不經 broker 的直連（LLM 推理、公開資料、自帶 token 的 Jira／GitHub），青色線是 broker 對內部資源的 egress。編號依序是：① 人透過 Telegram／Web UI 進來，② agent 以 MCP 呼叫 broker，③ CronJob 以 broker client 身分呼叫，④ broker 持憑證對內部資源 egress。
 
 資料流的重點：
 
