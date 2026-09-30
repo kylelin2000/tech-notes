@@ -1,7 +1,7 @@
 # Hermes Agent 架構與設計
 
 > 個人 AI 助手 / AI Lab / AI 瑞士刀。部署於 RDSec RONE（Kubernetes）。
-> 本文聚焦**設計概念與架構決策**；個別 job 的參數細節以各自 repo 的 docs 為準。
+> 本文聚焦**設計概念與架構決策**；個別 job 的參數與判定細節以 repo 內的 `docs/` 為準。
 
 ## 1. 背景與目標
 
@@ -13,7 +13,7 @@
 
 ## 2. 核心設計原則
 
-1. **LLM 不持有憑證。** 所有對內部資源的呼叫都經由 Tool Broker（MCP server），LLM 只能「提出請求」。
+1. **LLM 不持有憑證。** 互動 agent 對內部資源的所有呼叫都經由 Tool Broker（MCP server），只能「提出請求」。排程 job 中少數直連的部分（Jira、GitHub）使用各自獨立、範圍收斂的 token，屬於明確列出的例外（見 4.3）。
 2. **確定性的事交給程式，語意的事交給 LLM。** 排程 job 用固定 system prompt + 純 Python 的格式化／解析，輸出穩定可預期。
 3. **最小權限、逐元件隔離。** Secret 逐 pod 隔離，NetworkPolicy 讓 broker 成為唯一的內部 egress。
 4. **失敗就失敗，不貼半截。** Job 失敗一律 `sys.exit(1)`，不發出不完整的報告。
@@ -52,6 +52,8 @@
 
 ### 4.3 CronJob
 
+除 `ai-digest-weekly` 外，其餘 job 都會呼叫 LLM。
+
 | Job | 頻率 | 用途 | 與 broker 的關係 |
 | --- | --- | --- | --- |
 | `xsp-digest` | 每日 | XSP 錯誤摘要 → Teams | 純 broker client |
@@ -71,7 +73,7 @@
 - **憑證隔離**：agent 沒有憑證；k8s Secret 逐 pod 隔離；NetworkPolicy 讓 broker 成為唯一內部 egress。
 - **容器降權**：gateway 以 root 啟動修正 `/run` 權限後降為非特權使用者（uid 10000）；dashboard sidecar 全程以 uid 10000 執行。
 - **Skill 拆分**：Skill 本質上是 prompt + script 的混合體。為了安全，把既有 skill 拆開——判斷與對話留在 LLM agent，會碰憑證與外部系統的腳本放進 Tool MCP。
-- **範圍收斂**：能力刻意設計得窄，例如 Jira 只讀一個**釘死的 saved filter**，不開放任意 JQL；預設 DENIED，需明確開關才啟用。
+- **範圍收斂**：能力刻意設計得窄，例如 broker 的 Jira 動詞只讀一個**釘死的 saved filter**，不開放任意 JQL；預設 DENIED，需明確開關才啟用。
 - **Multi-model council（Claude／GPT／Gemini 協作）**：opt-in 且 fail-closed。需明確啟用，且互動 agent 只在使用者明確要求時才呼叫；排程 job 各自有獨立開關，預設仍是單一模型。
 
 ### 5.2 CronJob 輸出一致
@@ -82,7 +84,6 @@
 - 固定 system prompt + 純 Python 的 `render_*` / `parse_*`，輸出格式穩定。
 - `ai-digest-weekly` 是刻意的例外：完全不用 LLM，以先前記錄的 trusted metadata 做決定式渲染。
 - 所有 LLM job 與 usage reporter 都回報 token／成本到 broker（`record_usage`），彙總後供趨勢追蹤。成本是 client 端估算，並非帳單數字；broker 本身不持 LLM key。
-- 失敗即 `sys.exit(1)`，不貼半截結果。
 
 ### 5.3 Resilience
 
@@ -99,7 +100,7 @@
 
 ### 5.5 Self evolution by feedback
 
-從「自己的使用紀錄」長出改善清單，而不是讓模型自我修改：
+從「自己的使用紀錄」長出改善清單。這是 runtime 層的回饋迴圈（觀察稽核 → 提案 → 人審 → 修改 `SOUL.md` 或程式），並不調整模型本身：
 
 - `feedback-triage` 讀 broker 稽核軌跡（DENIED／ERROR 與 tool-call chain 的形狀），由 LLM 產生改善提案並自動開 GitHub issue；內容指紋不變則不重複留言。
 - `loop-triage` 追蹤 open issue，逾期未解加標籤並升級一次。
@@ -120,7 +121,8 @@
 
 ## 7. 取捨與限制
 
-- LLM 主導的排程本質上不穩定，因此走「固定流程 + LLM 只做判斷」；代價是每個 job 都要寫較多確定性程式。
+- 「固定流程 + LLM 只做判斷」的代價是每個 job 都要寫較多確定性程式。
+- broker 並非絕對唯一出口：pct-analyze 的 Jira、loop-triage 與 feedback-triage 的 GitHub 是直連，以獨立 token 簡化流程，代價是憑證面比純 broker 模式大。
 - 追蹤上游 `main` 的 skill 帶來版本漂移風險，換取免維護 patch。
 - 用量成本為估算值，不等同帳單。
 - 多數 job 綁定特定服務（Loki 標籤、Jira filter、Teams chat），移植到別的系統需要人工調整。
