@@ -3,6 +3,8 @@
 > 個人 AI 助手 / AI Lab / AI 瑞士刀。部署於 RDSec RONE（Kubernetes）。
 > 本文聚焦**設計概念與架構決策**；個別 job 的參數與判定細節以 repo 內的 `docs/` 為準。
 
+> 概念背景：Loop、Harness、Graph 等術語的演進與適用時機，見 [Prompt → Loop → Graph](../concepts/prompt-to-graph.md)。
+
 ## 1. 背景與目標
 
 - 定位：一個可用自然語言操作的個人 AI 助手，同時承載每日／每時的自動化報表與稽核。
