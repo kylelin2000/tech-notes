@@ -1,14 +1,14 @@
 # 端點遙測資料收集與影響評估架構
 
-這是我過去工作中參與過的系統架構，產品與元件名稱已改成通用說法。裝在客戶端的 Security Agent 會把事件記錄（telemetry logs）上傳到雲端，經過清洗後存進資料湖。之後在管理服務裡觸發影響評估時，再用掃描式查詢（sweeping query）去資料湖比對。
+這是我過去工作中參與過的系統架構，產品與元件名稱已改成通用說法。裝在客戶端的 Security Agent 會把事件記錄（telemetry logs）上傳到雲端，經過整理後存進資料湖。之後可以做 Sweeping 查詢影響範圍。
 
 ![端點遙測資料收集與影響評估架構](assets/telemetry-pipeline.svg)
 
-下半部是寫入路徑：Security Agent 上傳事件記錄，經 Receiver、Queue、ETL Worker 進到資料湖。上半部是讀取路徑：管理服務透過 Load Balancer 對 Query API 發出查詢，結果同步回傳，或以 callback 非同步通知。
+下半部是寫入路徑：Security Agent 上傳 telemetry logs，經 Receiver、Queue、ETL Worker 進到資料湖。上半部是讀取路徑：管理服務透過 Load Balancer 對 Query API 發出查詢，結果同步回傳，或以 callback 非同步通知。
 
 ## 兩條路徑
 
-寫入。 Security Agent 把事件記錄上傳到 Receiver。Receiver 收下後放進 Data Processing Queue，由 ETL Worker 取出做解析、驗證與清洗，再寫進 Cassandra 與 Elasticsearch。ETL Worker 也會把資料備份到 S3。
+寫入。 Security Agent 把事件記錄上傳到 Receiver。Receiver 收下後放進 Data Processing Queue，由 ETL Worker 取出做解析、驗證，再寫進 Cassandra 與 Elasticsearch。ETL Worker 也會把資料備份到 S3。
 
 讀取。 使用者在 Console 觸發影響評估，請求經 Load Balancer 到管理服務的 Portal，再由 AP 建立 job。Helper 負責取回結果。AP 透過另一層 Load Balancer 對 Query API Layer 送出 sweeping query，由 Impact Evaluation Query Engine 向 Cassandra 與 Elasticsearch 查詢。非同步模式下，結果由 callback 回傳。
 
