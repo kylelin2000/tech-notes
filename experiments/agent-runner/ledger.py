@@ -86,31 +86,51 @@ class Ledger:
         return row
 
     # ---- writes ---------------------------------------------------------
-    def add(self, key, payload=None) -> bool:
+    def _add(self, key, payload=None) -> bool:
         key = str(key).strip()
         if not key:
             raise LedgerError("empty key")
+        cur = self.db.execute(
+            "INSERT OR IGNORE INTO items(key,payload,updated_at) VALUES(?,?,?)",
+            (key, json.dumps(payload, ensure_ascii=False) if payload is not None else None, time.time()),
+        )
+        return cur.rowcount == 1
+
+    def add(self, key, payload=None) -> bool:
         with self._tx():
-            cur = self.db.execute(
-                "INSERT OR IGNORE INTO items(key,payload,updated_at) VALUES(?,?,?)",
-                (key, json.dumps(payload, ensure_ascii=False) if payload is not None else None, time.time()),
-            )
-            return cur.rowcount == 1
+            return self._add(key, payload)
 
     def add_lines(self, lines) -> int:
         """Each line is a bare key, or a JSON object with a "key" field (rest becomes payload)."""
         n = 0
-        for line in lines:
-            line = line.strip()
-            if not line or line.startswith("#"):
-                continue
-            if line.startswith("{"):
-                obj = json.loads(line)
-                key = obj.pop("key")
-                n += self.add(key, obj or None)
-            else:
-                n += self.add(line)
+        with self._tx():  # one transaction for the whole batch (all-or-nothing)
+            for line in lines:
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                if line.startswith("{"):
+                    obj = json.loads(line)
+                    key = obj.pop("key")
+                    n += self._add(key, obj or None)
+                else:
+                    n += self._add(line)
         return n
+
+    def release_in_progress(self) -> int:
+        """Give back every in_progress item (attempts exhausted -> failed). Only call when no agent can be running
+        (run.py holds the runner lock, so after startup or after an iteration has ended this is safe)."""
+        now = time.time()
+        with self._tx():
+            self.db.execute(
+                "UPDATE items SET status='failed', last_error='interrupted, attempts exhausted', updated_at=? "
+                "WHERE status='in_progress' AND attempts>=?", (now, self.max_attempts))
+            return self.db.execute(
+                "UPDATE items SET status='pending', updated_at=? WHERE status='in_progress'", (now,)).rowcount
+
+    def _require_in_progress(self, key):
+        row = self._get(key)
+        if row["status"] != "in_progress":
+            raise LedgerError(f"{key!r} is {row['status']}, not in_progress (claim it first; finished items cannot be changed)")
 
     def claim(self, n=10):
         """Take up to n pending items. Claiming counts as an attempt, so a poison item that
@@ -161,7 +181,7 @@ class Ledger:
         elif self.require_evidence:
             raise LedgerError("evidence is required: save the raw page to ./evidence/ and pass --evidence PATH")
         with self._tx():
-            self._get(key)
+            self._require_in_progress(key)
             self.db.execute(
                 "UPDATE items SET status='done', result=?, evidence=?, last_error=NULL, updated_at=? WHERE key=?",
                 (json.dumps(result, ensure_ascii=False), evidence, time.time(), key),
@@ -180,7 +200,7 @@ class Ledger:
 
     def _terminal(self, key, status, reason):
         with self._tx():
-            self._get(key)
+            self._require_in_progress(key)
             self.db.execute(
                 "UPDATE items SET status=?, last_error=?, updated_at=? WHERE key=?",
                 (status, str(reason)[:1000], time.time(), key),
