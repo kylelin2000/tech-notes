@@ -1,0 +1,71 @@
+# Copy to config.toml and edit. Relative paths are relative to this file (or [run].workdir).
+
+[run]
+name = "my-crawl"
+backend = "claude"            # claude | codex | opencode | api | custom
+task_file = "task.md"         # the written spec the agent reads every batch
+db = "state/ledger.db"        # progress lives here; re-running the same config RESUMES the job
+batch_size = 10               # items per iteration. Small = less overshoot + less context rot
+allowed_domains = ["example.com"]
+# seed_file = "seed.txt"      # optional: you already know the items (one key or JSON per line) -> skips discovery
+expected_tolerance_pct = 0    # if the site reports a total, listed items must be >= total * (1 - tol%)
+
+[limits]                      # 0 / missing = no limit for that item. Set ALL of them for unattended runs.
+max_wall_seconds = 14400                # 4 h total
+max_iterations = 80
+max_total_tokens = 4_000_000            # input + output (+ cache creation). See README for how exactly it is enforced
+max_cost_usd = 10.0                     # needs claude (reports cost) or [pricing]
+max_cost_usd_per_iteration = 1.5        # claude: passed as --max-budget-usd (hard, enforced mid-run by the CLI)
+iteration_timeout_seconds = 1800        # process group is killed after this
+max_consecutive_failures = 3            # crashes / timeouts in a row
+max_stalled_iterations = 3              # iterations in a row with zero ledger progress
+count_cache_read_tokens = false         # cache reads inflate agent-loop token counts; cost is the better meter
+
+[ledger]
+max_attempts = 3                        # per item, then it becomes `failed`
+required_fields = ["title", "url"]      # `done` is rejected by the ledger if any is missing/empty
+require_evidence = true                 # `done` must point to a saved raw page
+claim_timeout_seconds = 1800
+
+[verify]                                # optional extra gate; exit 0 = pass. Runs when the ledger says complete.
+# cmd = "python3 verify.py"
+
+[notify]
+discord_webhook_env = "DISCORD_WEBHOOK_URL"   # if this env var is set, a one-line result is posted at the end
+# on_finish_cmd = ["./my_hook.sh", "{summary}"]
+
+[pricing]                               # only needed for cost limits on backends that don't report cost
+# input_per_mtok = 3.0
+# output_per_mtok = 15.0
+
+# ------------------------------------------------------------------ backends
+[claude]
+max_turns = 40
+# model = "sonnet"
+# allowed_tools = ["Read", "Write", "WebFetch", "WebSearch", "Bash(python3 /abs/ledger.py *)"]  # default is shown here
+# extra_args = []
+
+[codex]
+# model = "..."
+# codex's default sandbox blocks network. Enable it in your Codex config (see its docs for your version),
+# or override the whole command with `cmd`.
+# extra_args = []
+
+[opencode]
+# model = "provider/model"
+# extra_args = []
+
+[api]                                   # built-in tool loop for any OpenAI-compatible /chat/completions endpoint
+model = "gpt-4.1"
+base_url_env = "OPENAI_BASE_URL"        # env var holding the base URL (falls back to base_url below, then OpenAI)
+# base_url = "https://my-gateway.example.com/v1"
+api_key_env = "OPENAI_API_KEY"
+max_steps = 60                          # tool-call rounds per iteration
+min_delay_seconds = 1.5                 # politeness delay per host
+respect_robots = true
+user_agent = "my-research-bot/1.0 (+you@example.com)"
+
+# Use any other CLI: placeholders {prompt} {prompt_file} {max_turns} {iter_budget_usd} {model}
+[custom]
+# cmd = ["my-agent", "--non-interactive", "--task-file", "{prompt_file}"]
+# prompt_via = "arg"                    # or "stdin"
