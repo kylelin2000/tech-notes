@@ -66,6 +66,7 @@
 - 工具設計：工具輸出就是 JSON，給模型熟悉的形狀；原生工具如 apply_patch，shell，ripgrep；以程式碼執行（持久 REPL + Playwright JS）取代一次一動作的 computer use。[Kundel]
 - 範例：browser session 用純 Playwright 而非 MCP。[Kumar]
 - MCP 負責 agent 對外，ACP 負責 client 對 harness：JSON-RPC，session，權限請求，可擴充方法；client，harness，tools，model 四者可分別放在不同位置。[Hancock]
+- Code Mode（[Pai]，部分）：harness 的重點不只是產生程式碼，還要有一個安全的執行空間，並只在其中暴露受控的能力。
 - Gateway：每個沙箱一個 MCP gateway 端點，集中控制工具/資源/prompt，harness 可替換。[Clark]
 
 ### Skills 的實作
@@ -213,10 +214,10 @@
 ## 範圍與方法（本筆記的限制）
 - 搜尋結果共 208 筆，去重後 158 支影片，其中 55 支逐字稿提到 "harness" 5 次以上。
 - 已實際讀過逐字稿與資訊欄的有 32 支 (28 支全文，4 支只讀關鍵字附近段落，標（部分）)；另有 1 支 9 小時直播只取了少數數據點。見文末來源索引。
-- 沒讀的：其餘約 30 支高相關影片與約 100 支低相關影片（清單見文末），另有 3 支下載失敗（兩個長篇大會直播與一支音樂生成）。
+- 沒讀的：其餘影片已評估相關度，高相關者列在文末「待讀清單」，低相關者已移除，另有 3 支下載失敗（兩個長篇大會直播與一支音樂生成）。
 - 逐字稿是 YouTube 英文自動字幕，內容為中文整理；數字與引述以影片內容為準，重要數據請回原片確認。
 - 同一觀點有多人提到時，來源標籤會並列。
-- 標（部分）的影片只讀了關鍵字附近段落與資訊欄，包含 [Prabaker] [Bakaus] [Templestein] [Bhardwaj]；其中 [Prabaker] 在內文引用較多，細節請特別回原片確認。
+- 標（部分）的影片只讀了關鍵字附近段落與資訊欄，包含 [Prabaker] [Bakaus] [Templestein] [Bhardwaj] [Pai]；其中 [Prabaker] 在內文引用較多，細節請特別回原片確認。
 - [WF26] 為 9 小時直播，只取了少數段落，引用的數據未經深讀驗證。
 - 廠商影片（Oracle、Docker、Cast AI、RELAI）立場偏向自家產品，「意見分歧」一節已盡量並列其他講者的觀點。
 
@@ -258,9 +259,38 @@
 | Clark | [How Many Credentials Should Your AI Agent Have? Zero. (Docker)](https://www.youtube.com/watch?v=ZUZVNKFSmTM) | 全文 (廠商性質) |
 | Schmid-NoCode | [Agents Without Code: Skills, YAML, and Filesystems (Google DeepMind)](https://www.youtube.com/watch?v=fjF8EKnxKCU) | 全文 |
 | Bhardwaj | [From fork() to Fleet: Agent Sandbox Cloud (OpenAI)](https://www.youtube.com/watch?v=OqM67QG_Ikk) | 部分 (關鍵字段落 + 資訊欄) |
+| Pai | [Code Mode: Let the Code do the Talking — Sunil Pai, Cloudflare](https://www.youtube.com/watch?v=8txf05vVVl4) | 部分 (僅讀關鍵字附近段落) |
 | WF26 | [WF26 Harness Engineering 全天直播 (551 分鐘)](https://www.youtube.com/watch?v=I2cbIws9j10) | 僅少數段落, 未深讀 |
 
-## 尚未讀的高相關影片 (逐字稿提到 harness 5 次以上, 依次數)
+## 待讀清單
 
-Will Brown Modern Post-Training (V-EDrhIhHzQ), AIE Europe Keynotes (O_IMsEg91g8), Daniel Han Special Topics (uIiA6DquRiE), Tejas Kumar Evals in AI (NdrSPm6NCdk), Google Are LLM Performance Benchmarks Reliable (l1-D89bAuOA), Paul Iusztin Turn 10,994 Notes Into Memory (ZRM_TfEZcIo), RLM for large codebases (8oyalrfwgjw), Eugene Yan Using LLMs to Secure Source Code (imFedndyXYQ), Finance agent bottleneck (z0sh8HyTrDo), Local Models NVIDIA (FWMJQDH3iK0), Ara Khan Evals Are Broken (QuuIywMG4s8), State of the Union Local (KB41dTlX1Uc), Recursive Coding Agents (3hXJI2q0Jz8), Claude Agent SDK Workshop (TqC1qOfiVcQ), Imad Touil Skills Orgs (M05vON8i0aI), Alex Cheema Run Frontier AI at Home (ESbWpPT_9-o), Melanie Warrick Human Is an Async API (jc3kbZkuHTo), Addy Osmani (n97BCfyFIvw), Ivan Leo Interaction (8aVbXXvJUY4), Vincent Koc Malleable Evals (4VhbYlfC7Gs), RL Environments at Scale (_IzZWeuTx7I), Onur Solmaz acpx (VaS2h-dY1-4), Talha Sheikh rules (MpZzWMdmQCE), Sunil Pai Code Mode (8txf05vVVl4), Zubin Aysola Self-improving agent (XyV6bSMyq-I), Lou Bichard Agent Swarms (5Sui_OnSRlY), Codex Masterclass (MhHEGMFCEB0)。
-另外與 harness 相關但字幕未頻繁出現該詞的: Dex Horthy No Vibes Allowed (rmvDxxNubIg), Chris Parsons Ralph Loops (2TLXsxkz0zI, 108 分鐘 workshop, 逐字稿未出現該關鍵字, 未讀), Great Loops Debate (c35YoMdnI78), Matt Pocock (-QFHIoCo-Ko), Eric Zakariasson software factory (rnDm57Py54A), Factory multi-agent (ow1we5PzK-o), Barry Zhang (CEvIs9y1uog, D7_ipDqhtwk)。
+以下影片的逐字稿提到 harness 的次數偏多，但尚未讀完。我依標題與說明評估相關度，與本筆記主題較遠的（後訓練、kernel、本地模型硬體、一般 evals、keynote 合輯等）已移除。讀完後再把重點併入上方對應章節。
+
+### 高相關（優先讀）
+
+- [Your coding agent doesn't always follow your rules — Talha Sheikh, Checkout.com](https://www.youtube.com/watch?v=MpZzWMdmQCE)：以 hook 在每次動作即時強制規則，對應「驗證與品質關卡」的 hooks。
+- [How We Built an Agent That Improves Itself — Zubin Aysola, Weights & Biases](https://www.youtube.com/watch?v=XyV6bSMyq-I)：agent 自己改自己的做法，對應「持續改進與評估」。
+- [The Missing Primitive for Agent Swarms — Lou Bichard, Ona](https://www.youtube.com/watch?v=5Sui_OnSRlY)：背景 agent 叢集的基礎設施（Stripe Minions、Ramp Inspect 類型），對應「長時間、非同步與組織級 harness」。
+- [Scaling Agents on Kubernetes with acpx and ACP — Onur Solmaz, OpenClaw](https://www.youtube.com/watch?v=VaS2h-dY1-4)：以 Kubernetes 與 ACP 規模化執行 agent，對應「工具與 ACP」。
+- [An Interaction Is All You Need — Ivan Leo, Google DeepMind](https://www.youtube.com/watch?v=8aVbXXvJUY4)：Gemini Interactions API 與 Managed Agents，對應「抽象層級演進」。
+- [The Human Is an Async API — Melanie Warrick, Temporal](https://www.youtube.com/watch?v=jc3kbZkuHTo)：等待人類回應時的耐久執行，對應「狀態、可靠性與可觀測」。
+- [Claude Agent SDK [Full Workshop] — Thariq Shihipar, Anthropic](https://www.youtube.com/watch?v=TqC1qOfiVcQ)：官方 harness 的 SDK 用法，對應「自建 vs 依賴官方 harness」。
+- [AI-Native Organisations Run on Skills — Imad Touil, QuantumBlack](https://www.youtube.com/watch?v=M05vON8i0aI)：技能的組織級治理，可與 [Miraje] 對照。
+- [Don't Build Agents, Build Skills Instead — Barry Zhang & Mahesh Murag, Anthropic](https://www.youtube.com/watch?v=CEvIs9y1uog)：Anthropic 對 skills 的主張，可與 [Nisi] [Schmid-Evals] 對照。
+- [The Great Loops Debate — Dex Horthy, Geoff Huntley 等](https://www.youtube.com/watch?v=c35YoMdnI78)：loop 的實務效果辯論，對應「意見分歧」。
+- [Ralph Loops: Build Dumb AI Loops That Ship — Chris Parsons, Cherrypick](https://www.youtube.com/watch?v=2TLXsxkz0zI)：Ralph loop 的完整 workshop，對應「Agent loop 與控制流」。
+- [Recursive Coding Agents — Raymond Weitekamp, OpenProse](https://www.youtube.com/watch?v=3hXJI2q0Jz8)、[RLM: Recursive Language Models for Large Codebases — Shashi, Superagentic AI](https://www.youtube.com/watch?v=8oyalrfwgjw)：以遞迴方式把 context 外部化，對應「Context engineering」。
+- [OpenAI Codex Masterclass — Vaibhav Srivastav & Katia Gil Guzman](https://www.youtube.com/watch?v=MhHEGMFCEB0)：Codex 的 plugins、automations 與 subagents 實務。
+
+### 次要候補（有餘力再讀）
+
+- [No Vibes Allowed — Dex Horthy, HumanLayer](https://www.youtube.com/watch?v=rmvDxxNubIg)：Horthy 2025 年版的規劃與對齊，內容與 [Horthy-SF] 有重疊。
+- [The Multi-Agent Architecture That Actually Ships — Luke Alvoeiro, Factory](https://www.youtube.com/watch?v=ow1we5PzK-o)：多 agent 協作的實務分類，可補「子 agent 作法」。
+- [Building your own software factory — Eric Zakariasson, Cursor](https://www.youtube.com/watch?v=rnDm57Py54A)：多 agent 工廠式開發的做法，可補「長時間與組織級」。
+- [Full Walkthrough: Workflow for AI Coding — Matt Pocock](https://www.youtube.com/watch?v=-QFHIoCo-Ko)：AI 輔助開發的完整工作流。
+- [Evals Are Broken, Use Them Anyway — Ara Khan, Cline](https://www.youtube.com/watch?v=QuuIywMG4s8)：評估基礎設施的設定如何影響分數（Terminal Bench 例）。
+- [Malleable Evals — Vincent Koc, OpenClaw](https://www.youtube.com/watch?v=4VhbYlfC7Gs)：對適應式系統做評估，可與 [Chandegra] 對照。
+- [Turn 10,994 Notes Into Memory — Paul Iusztin & Louis-François Bouchard](https://www.youtube.com/watch?v=ZRM_TfEZcIo)：多 agent 的記憶實作課程，可與 [Druga] [L.Martin] 對照。
+- [How We Build Effective Agents — Barry Zhang, Anthropic](https://www.youtube.com/watch?v=D7_ipDqhtwk)：Barry Zhang 2025 年的 agent 設計總論，偏入門。
+
+另有 Chris Parsons 的 Ralph Loops 逐字稿未出現 harness 一詞，仍因主題相關列入上方。
