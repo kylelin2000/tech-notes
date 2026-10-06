@@ -11,11 +11,11 @@
   <rect width="860" height="625" fill="#0d1117"/>
 
   <!-- ============ Zones ============ -->
-  <!-- Left: small business security service -->
+  <!-- Left: Management Service -->
   <rect x="2" y="2" width="300" height="428" fill="none" stroke="#6e7681" stroke-width="1.5" stroke-dasharray="6 4"/>
   <rect x="38" y="22" width="244" height="256" fill="none" stroke="#6e7681" stroke-width="1" stroke-dasharray="2 2"/>
-  <text x="160" y="46" text-anchor="middle" font-size="20" fill="#8b949e">Small business</text>
-  <text x="160" y="68" text-anchor="middle" font-size="20" fill="#8b949e">security service</text>
+  <text x="160" y="46" text-anchor="middle" font-size="20" fill="#8b949e">Management</text>
+  <text x="160" y="68" text-anchor="middle" font-size="20" fill="#8b949e">Service</text>
 
   <!-- Right: cloud backend -->
   <rect x="343" y="2" width="515" height="428" fill="none" stroke="#6e7681" stroke-width="1.5" stroke-dasharray="6 4"/>
@@ -29,9 +29,9 @@
     <rect x="46" y="168" width="76" height="40" fill="#238636" stroke="#3fb950"/>
     <text x="84" y="194">Portal</text>
     <rect x="133" y="110" width="76" height="40" fill="#238636" stroke="#3fb950"/>
-    <text x="171" y="136">AP</text>
+    <text x="171" y="136">Job</text>
     <rect x="141" y="177" width="76" height="40" fill="#238636" stroke="#3fb950"/>
-    <text x="179" y="203">Helper</text>
+    <text x="179" y="203">Fetcher</text>
   </g>
   <text x="188" y="87" font-size="11" fill="#8b949e" text-anchor="middle">submit</text>
   <text x="206" y="102" font-size="11" fill="#8b949e" text-anchor="middle">job</text>
@@ -64,8 +64,8 @@
   <rect x="415" y="75" width="198" height="115" fill="#9e6a03" stroke="#d29922" stroke-width="1.5"/>
   <text x="514" y="105" text-anchor="middle" font-size="19" fill="#fff">Query API Layer</text>
   <rect x="430" y="122" width="170" height="56" fill="#8e2d3a" stroke="#f85149" stroke-width="2"/>
-  <text x="515" y="145" text-anchor="middle" font-size="17" fill="#fff">Impact Evaluation</text>
-  <text x="515" y="166" text-anchor="middle" font-size="17" fill="#fff">Query Engine</text>
+  <text x="515" y="145" text-anchor="middle" font-size="17" fill="#fff">Scope Query</text>
+  <text x="515" y="166" text-anchor="middle" font-size="17" fill="#fff">Engine</text>
 
   <!-- ============ Data Lake DB Farm ============ -->
   <rect x="630" y="15" width="225" height="193" fill="#0d1117" stroke="#6e7681" stroke-width="1" stroke-dasharray="2 2"/>
@@ -134,9 +134,9 @@
   <path d="M516 366 L538 366" stroke="#8b949e" stroke-width="1.5" marker-end="url(#ah)" fill="none"/>
   <text x="557" y="410" text-anchor="middle" font-size="16" font-weight="bold" fill="#c9d1d9">Receiver</text>
 
-  <!-- Security Agent -->
+  <!-- Endpoint Agent -->
   <rect x="523" y="510" width="169" height="52" fill="#1f6feb" stroke="#58a6ff"/>
-  <text x="607" y="543" text-anchor="middle" font-size="19" fill="#fff">Security Agent</text>
+  <text x="607" y="543" text-anchor="middle" font-size="19" fill="#fff">Endpoint Agent</text>
 
   <!-- ============ Arrows ============ -->
   <g fill="none" stroke="#8b949e" stroke-width="3" stroke-linecap="round" marker-end="url(#ah)">
@@ -144,11 +144,11 @@
     <path d="M84 166 C84 134 100 130 128 130"/>
     <!-- AP -> LB -->
     <path d="M211 130 C226 130 232 140 240 150"/>
-    <!-- AP -> Helper -->
+    <!-- AP -> Fetcher -->
     <path d="M171 152 L171 173"/>
-    <!-- LB -> Helper (get result) -->
+    <!-- LB -> Fetcher (get result) -->
     <path d="M240 225 C228 225 224 215 220 210"/>
-    <!-- LB -> Query API: issue sweeping query -->
+    <!-- LB -> Query API: issue Scope query -->
     <path d="M284 148 C320 135 350 122 412 118"/>
     <!-- Query API -> LB: get result / callback -->
     <path d="M412 150 C370 215 330 235 286 232"/>
@@ -176,11 +176,11 @@
   <!-- ============ Arrow labels ============ -->
   <g font-size="12" text-anchor="middle">
     <text x="340" y="96" fill="#58a6ff" font-weight="bold">Issue</text>
-    <text x="340" y="112" fill="#58a6ff" font-weight="bold">Sweeping Query</text>
+    <text x="340" y="112" fill="#58a6ff" font-weight="bold">Scope Query</text>
     <text x="410" y="258" fill="#58a6ff" font-weight="bold">Get result or callback</text>
     <text x="410" y="275" fill="#58a6ff" font-weight="bold">(async mode only)</text>
     <text x="196" y="383" fill="#8b949e">Trigger</text>
-    <text x="196" y="399" fill="#8b949e">Impact Evaluation</text>
+    <text x="196" y="399" fill="#8b949e">Scope Query</text>
     <text x="640" y="478" fill="#8b949e">Upload</text>
     <text x="640" y="494" fill="#8b949e">Event Logs</text>
   </g>
