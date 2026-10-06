@@ -29,9 +29,9 @@
     <rect x="46" y="168" width="76" height="40" fill="#238636" stroke="#3fb950"/>
     <text x="84" y="194">Portal</text>
     <rect x="133" y="110" width="76" height="40" fill="#238636" stroke="#3fb950"/>
-    <text x="171" y="136">Job</text>
+    <text x="171" y="136">API</text>
     <rect x="141" y="177" width="76" height="40" fill="#238636" stroke="#3fb950"/>
-    <text x="179" y="203">Fetcher</text>
+    <text x="179" y="203">Worker</text>
   </g>
   <text x="188" y="87" font-size="11" fill="#8b949e" text-anchor="middle">submit</text>
   <text x="206" y="102" font-size="11" fill="#8b949e" text-anchor="middle">job</text>
@@ -144,9 +144,9 @@
     <path d="M84 166 C84 134 100 130 128 130"/>
     <!-- AP -> LB -->
     <path d="M211 130 C226 130 232 140 240 150"/>
-    <!-- AP -> Fetcher -->
+    <!-- AP -> Worker -->
     <path d="M171 152 L171 173"/>
-    <!-- LB -> Fetcher (get result) -->
+    <!-- LB -> Worker (get result) -->
     <path d="M240 225 C228 225 224 215 220 210"/>
     <!-- LB -> Query API: issue Scope query -->
     <path d="M284 148 C320 135 350 122 412 118"/>
