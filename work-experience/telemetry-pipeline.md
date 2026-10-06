@@ -10,7 +10,7 @@
 
 寫入。 Endpoint Agent 把事件記錄上傳到 Receiver。Receiver 收下後放進 Data Processing Queue，由 ETL Worker 取出做解析、驗證，再寫進 Cassandra 與 Elasticsearch。ETL Worker 也會把資料備份到 S3。
 
-讀取。 使用者在 Console 觸發範圍查詢，請求經 Load Balancer 到管理服務的 Portal，再由 Job 元件建立 job。Fetcher 負責取回結果。Job 元件透過另一層 Load Balancer 對 Query API Layer 送出 scope query，由 Scope Query Engine 向 Cassandra 與 Elasticsearch 查詢。非同步模式下，結果由 callback 回傳。
+讀取。 使用者在 Console 觸發範圍查詢，請求經 Load Balancer 到管理服務的 Portal，再由 API 元件建立 job。Worker 負責取回結果。API 元件透過另一層 Load Balancer 對 Query API Layer 送出 scope query，由 Scope Query Engine 向 Cassandra 與 Elasticsearch 查詢。非同步模式下，結果由 callback 回傳。
 
 ## 兩個設計重點
 
