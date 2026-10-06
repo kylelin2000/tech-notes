@@ -224,41 +224,41 @@
 
 ## 來源索引
 
-| 簡稱 | 影片 | ID | 讀取程度 |
-|---|---|---|---|
-| Kumar | Harnesses in AI: A Deep Dive, Tejas Kumar (IBM) | [C_GG5g38vLU](https://www.youtube.com/watch?v=C_GG5g38vLU) | 全文 |
-| Chambers | Harness Engineering: Building the Production Cage, Mike Chambers (AWS) | [gxVZ_1tuuq4](https://www.youtube.com/watch?v=gxVZ_1tuuq4) | 全文 |
-| Lopopolo | Harness Engineering: How to Build Software When Humans Steer, Ryan Lopopolo (OpenAI) | [am_oeAoUhew](https://www.youtube.com/watch?v=am_oeAoUhew) | 全文 (含 Q&A) |
-| Martinez | Total Recall: Agent Memory and Harness Engineering, Ignacio Martinez (Oracle) | [xs-ob87TTzg](https://www.youtube.com/watch?v=xs-ob87TTzg) | 全文 |
-| Chandegra | Beyond the Harness: Adaptive Engineering, Rajiv Chandegra | [qdZzND79mcg](https://www.youtube.com/watch?v=qdZzND79mcg) | 全文 |
-| Bhat&He | Claude Managed Agents and Evolution of Agentic Surfaces (Anthropic) | [K0X9QDRkIdg](https://www.youtube.com/watch?v=K0X9QDRkIdg) | 全文 |
-| Prabaker | Anthropic Workshop: Build Agents That Run for Hours | [mR-WAvEPRwE](https://www.youtube.com/watch?v=mR-WAvEPRwE) | 部分 (關鍵字段落 + 資訊欄) |
-| L.Martin | Claude for Long-Horizon Tasks, Lance Martin (Anthropic) | [9QebvrrY3KY](https://www.youtube.com/watch?v=9QebvrrY3KY) | 全文 |
-| Chen&Fioca | Future-Proof Coding Agents (OpenAI) | [wVl6ZjELpBk](https://www.youtube.com/watch?v=wVl6ZjELpBk) | 全文 |
-| Trivedy | Improving Agents is a Data Mining Problem (LangChain) | [CvRngaQZQ3Y](https://www.youtube.com/watch?v=CvRngaQZQ3Y) | 全文 |
-| Govindarajan | The Model Was Right. The Harness Failed. (OpenAI) | [BInpv7lGp1o](https://www.youtube.com/watch?v=BInpv7lGp1o) | 全文 |
-| Bhargava | What if the harness mattered more than the model? (Etsy) | [2e9ANoOEn28](https://www.youtube.com/watch?v=2e9ANoOEn28) | 全文 |
-| Bhagwat | Every Harness Will Become A Claw (Mastra) | [8qWIPUia2O8](https://www.youtube.com/watch?v=8qWIPUia2O8) | 全文 |
-| Miraje | Skills are new features: Skill-Centric Harness (FactSet) | [7jjudsEhBtM](https://www.youtube.com/watch?v=7jjudsEhBtM) | 全文 |
-| Kundel | How Codex Works (OpenAI) | [shRR1e2HXMk](https://www.youtube.com/watch?v=shRR1e2HXMk) | 全文 |
-| Hancock | ACP: The Universal Remote Control for AI Agents (Block) | [YkNulwcc5jk](https://www.youtube.com/watch?v=YkNulwcc5jk) | 全文 |
-| CastAI | Stop Rationing Tokens: Let the Harness Pick the Model (Kimchi) | [48YUYDjwfYY](https://www.youtube.com/watch?v=48YUYDjwfYY) | 全文 (廠商宣傳性質) |
-| Druga | Memory Harnesses for Long-Running Research Agents (Sakana.ai) | [R3-anFK1YM8](https://www.youtube.com/watch?v=R3-anFK1YM8) | 全文 |
-| Bakaus | The Dark Arts of Skill Engineering | [SQMCtZX3trg](https://www.youtube.com/watch?v=SQMCtZX3trg) | 部分 (關鍵字段落 + 資訊欄) |
-| Malcolm | No Memory, No Harness (Oracle) | [jA_x7F8caHI](https://www.youtube.com/watch?v=jA_x7F8caHI) | 全文 (廠商宣傳性質) |
-| Horthy-SF | Why Software Factories Fail, Dex Horthy | [Ib5GBkD555M](https://www.youtube.com/watch?v=Ib5GBkD555M) | 全文 |
-| Templestein | Make your own event-sourced agent harness (Iterate) | [vi-2nasppAg](https://www.youtube.com/watch?v=vi-2nasppAg) | 部分 (關鍵字段落 + 資訊欄) |
-| Feizi | Continual Learning for AI Agents (RELAI) | [2IxD9OB3XuQ](https://www.youtube.com/watch?v=2IxD9OB3XuQ) | 全文 (廠商性質) |
-| Jain | Unlock Agent Autonomy: The Runtime for AI-Native Systems (Docker) | [zaGyGgLW3SM](https://www.youtube.com/watch?v=zaGyGgLW3SM) | 全文 (廠商性質) |
-| Nisi | How I deleted 95% of my agent skills (WorkOS) | [vy7o1g2iHY8](https://www.youtube.com/watch?v=vy7o1g2iHY8) | 全文 |
-| Delucia | How we solved Context Management in Agents (Arize) | [esY99nYXxR4](https://www.youtube.com/watch?v=esY99nYXxR4) | 全文 |
-| Mistele | Loop Engineering from First Principles (HumanLayer) | [xIt_mTQp6mY](https://www.youtube.com/watch?v=xIt_mTQp6mY) | 全文 |
-| Schmid-Evals | Don't Ship Skills Without Evals (Google DeepMind) | [0vphxNt4wyk](https://www.youtube.com/watch?v=0vphxNt4wyk) | 全文 |
-| Horthy-12F | 12-Factor Agents (HumanLayer, 2025-07) | [8kMaTybvDUw](https://www.youtube.com/watch?v=8kMaTybvDUw) | 全文 |
-| Clark | How Many Credentials Should Your AI Agent Have? Zero. (Docker) | [ZUZVNKFSmTM](https://www.youtube.com/watch?v=ZUZVNKFSmTM) | 全文 (廠商性質) |
-| Schmid-NoCode | Agents Without Code: Skills, YAML, and Filesystems (Google DeepMind) | [fjF8EKnxKCU](https://www.youtube.com/watch?v=fjF8EKnxKCU) | 全文 |
-| Bhardwaj | From fork() to Fleet: Agent Sandbox Cloud (OpenAI) | [OqM67QG_Ikk](https://www.youtube.com/watch?v=OqM67QG_Ikk) | 部分 (關鍵字段落 + 資訊欄) |
-| WF26 | WF26 Harness Engineering 全天直播 (551 分鐘) | [I2cbIws9j10](https://www.youtube.com/watch?v=I2cbIws9j10) | 僅少數段落, 未深讀 |
+| 簡稱 | 影片 | 讀取程度 |
+|---|---|---|
+| Kumar | [Harnesses in AI: A Deep Dive, Tejas Kumar (IBM)](https://www.youtube.com/watch?v=C_GG5g38vLU) | 全文 |
+| Chambers | [Harness Engineering: Building the Production Cage, Mike Chambers (AWS)](https://www.youtube.com/watch?v=gxVZ_1tuuq4) | 全文 |
+| Lopopolo | [Harness Engineering: How to Build Software When Humans Steer, Ryan Lopopolo (OpenAI)](https://www.youtube.com/watch?v=am_oeAoUhew) | 全文 (含 Q&A) |
+| Martinez | [Total Recall: Agent Memory and Harness Engineering, Ignacio Martinez (Oracle)](https://www.youtube.com/watch?v=xs-ob87TTzg) | 全文 |
+| Chandegra | [Beyond the Harness: Adaptive Engineering, Rajiv Chandegra](https://www.youtube.com/watch?v=qdZzND79mcg) | 全文 |
+| Bhat&He | [Claude Managed Agents and Evolution of Agentic Surfaces (Anthropic)](https://www.youtube.com/watch?v=K0X9QDRkIdg) | 全文 |
+| Prabaker | [Anthropic Workshop: Build Agents That Run for Hours](https://www.youtube.com/watch?v=mR-WAvEPRwE) | 部分 (關鍵字段落 + 資訊欄) |
+| L.Martin | [Claude for Long-Horizon Tasks, Lance Martin (Anthropic)](https://www.youtube.com/watch?v=9QebvrrY3KY) | 全文 |
+| Chen&Fioca | [Future-Proof Coding Agents (OpenAI)](https://www.youtube.com/watch?v=wVl6ZjELpBk) | 全文 |
+| Trivedy | [Improving Agents is a Data Mining Problem (LangChain)](https://www.youtube.com/watch?v=CvRngaQZQ3Y) | 全文 |
+| Govindarajan | [The Model Was Right. The Harness Failed. (OpenAI)](https://www.youtube.com/watch?v=BInpv7lGp1o) | 全文 |
+| Bhargava | [What if the harness mattered more than the model? (Etsy)](https://www.youtube.com/watch?v=2e9ANoOEn28) | 全文 |
+| Bhagwat | [Every Harness Will Become A Claw (Mastra)](https://www.youtube.com/watch?v=8qWIPUia2O8) | 全文 |
+| Miraje | [Skills are new features: Skill-Centric Harness (FactSet)](https://www.youtube.com/watch?v=7jjudsEhBtM) | 全文 |
+| Kundel | [How Codex Works (OpenAI)](https://www.youtube.com/watch?v=shRR1e2HXMk) | 全文 |
+| Hancock | [ACP: The Universal Remote Control for AI Agents (Block)](https://www.youtube.com/watch?v=YkNulwcc5jk) | 全文 |
+| CastAI | [Stop Rationing Tokens: Let the Harness Pick the Model (Kimchi)](https://www.youtube.com/watch?v=48YUYDjwfYY) | 全文 (廠商宣傳性質) |
+| Druga | [Memory Harnesses for Long-Running Research Agents (Sakana.ai)](https://www.youtube.com/watch?v=R3-anFK1YM8) | 全文 |
+| Bakaus | [The Dark Arts of Skill Engineering](https://www.youtube.com/watch?v=SQMCtZX3trg) | 部分 (關鍵字段落 + 資訊欄) |
+| Malcolm | [No Memory, No Harness (Oracle)](https://www.youtube.com/watch?v=jA_x7F8caHI) | 全文 (廠商宣傳性質) |
+| Horthy-SF | [Why Software Factories Fail, Dex Horthy](https://www.youtube.com/watch?v=Ib5GBkD555M) | 全文 |
+| Templestein | [Make your own event-sourced agent harness (Iterate)](https://www.youtube.com/watch?v=vi-2nasppAg) | 部分 (關鍵字段落 + 資訊欄) |
+| Feizi | [Continual Learning for AI Agents (RELAI)](https://www.youtube.com/watch?v=2IxD9OB3XuQ) | 全文 (廠商性質) |
+| Jain | [Unlock Agent Autonomy: The Runtime for AI-Native Systems (Docker)](https://www.youtube.com/watch?v=zaGyGgLW3SM) | 全文 (廠商性質) |
+| Nisi | [How I deleted 95% of my agent skills (WorkOS)](https://www.youtube.com/watch?v=vy7o1g2iHY8) | 全文 |
+| Delucia | [How we solved Context Management in Agents (Arize)](https://www.youtube.com/watch?v=esY99nYXxR4) | 全文 |
+| Mistele | [Loop Engineering from First Principles (HumanLayer)](https://www.youtube.com/watch?v=xIt_mTQp6mY) | 全文 |
+| Schmid-Evals | [Don't Ship Skills Without Evals (Google DeepMind)](https://www.youtube.com/watch?v=0vphxNt4wyk) | 全文 |
+| Horthy-12F | [12-Factor Agents (HumanLayer, 2025-07)](https://www.youtube.com/watch?v=8kMaTybvDUw) | 全文 |
+| Clark | [How Many Credentials Should Your AI Agent Have? Zero. (Docker)](https://www.youtube.com/watch?v=ZUZVNKFSmTM) | 全文 (廠商性質) |
+| Schmid-NoCode | [Agents Without Code: Skills, YAML, and Filesystems (Google DeepMind)](https://www.youtube.com/watch?v=fjF8EKnxKCU) | 全文 |
+| Bhardwaj | [From fork() to Fleet: Agent Sandbox Cloud (OpenAI)](https://www.youtube.com/watch?v=OqM67QG_Ikk) | 部分 (關鍵字段落 + 資訊欄) |
+| WF26 | [WF26 Harness Engineering 全天直播 (551 分鐘)](https://www.youtube.com/watch?v=I2cbIws9j10) | 僅少數段落, 未深讀 |
 
 ## 尚未讀的高相關影片 (逐字稿提到 harness 5 次以上, 依次數)
 
