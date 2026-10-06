@@ -21,11 +21,13 @@ import hashlib
 import http.client
 import json
 import logging
+import math
 import os
 import signal
 import subprocess
 import sys
 import time
+import tempfile
 import tomllib
 import urllib.error
 import urllib.parse
@@ -272,8 +274,10 @@ def parse_claude(out):
         cache_create=u.get("cache_creation_input_tokens", 0) or 0,
         cost_usd=obj.get("total_cost_usd"),
     )
-    err = bool(obj.get("is_error"))
-    note = obj.get("subtype") if str(obj.get("subtype", "")).startswith("error") else ""
+    sub = str(obj.get("subtype", ""))
+    note = sub if sub.startswith("error") else ""
+    # hitting the per-iteration turn/budget cap is a normal stop, not a failure (the stall check catches no-progress)
+    err = bool(obj.get("is_error")) and sub not in ("error_max_turns", "error_max_budget_usd")
     return usage, err, (str(obj.get("result", ""))[:500] or note), note
 
 
@@ -500,7 +504,7 @@ class Fetcher:
             return False
         return rp.can_fetch(self.ua, url)
 
-    def fetch(self, url):
+    def fetch(self, url, timeout=30):
         if not self.allowed(url):
             return {"error": f"domain not allowed: {url}"}
         if not self._robots_ok(url):
@@ -511,7 +515,7 @@ class Fetcher:
             time.sleep(wait)
         try:
             req = urllib.request.Request(url, headers={"User-Agent": self.ua, "Accept": "text/html,application/xhtml+xml,application/json,text/plain,*/*;q=0.5"})
-            with self.opener.open(req, timeout=30) as r:
+            with self.opener.open(req, timeout=timeout) as r:
                 raw = r.read(self.max_bytes + 1)
                 status, ctype, final = r.status, r.headers.get("Content-Type", ""), r.geturl()
         except urllib.error.HTTPError as e:
@@ -583,11 +587,11 @@ class ApiBackend:
         self.fetcher = Fetcher(cfg, Path("evidence"))
 
     # -- tool dispatch
-    def _exec(self, name, args):
+    def _exec(self, name, args, deadline=math.inf):
         L = self.ledger
         try:
             if name == "fetch":
-                return self.fetcher.fetch(args["url"])
+                return self.fetcher.fetch(args["url"], timeout=max(1.0, min(30.0, deadline - time.monotonic())))
             if name == "ledger_claim":
                 return {"items": L.claim(int(args.get("n", 10)))}
             if name == "ledger_done":
@@ -613,22 +617,25 @@ class ApiBackend:
         except (LedgerError, KeyError, TypeError, ValueError) as e:
             return {"error": f"{type(e).__name__}: {e}"}
 
-    def _chat(self, messages):
+    def _chat(self, messages, deadline=math.inf):
         body = json.dumps({"model": self.model, "messages": messages, "tools": TOOLS, "tool_choice": "auto"}).encode()
         for attempt in range(4):
+            left = deadline - time.monotonic()
+            if left <= 0:
+                raise RuntimeError("timeout: iteration deadline reached")
             req = urllib.request.Request(self.base + "/chat/completions", data=body, method="POST",
                                          headers={"Content-Type": "application/json", "Authorization": f"Bearer {self.key}"})
             try:
-                with urllib.request.urlopen(req, timeout=300) as r:
+                with urllib.request.urlopen(req, timeout=min(300.0, left)) as r:
                     return json.loads(r.read())
             except urllib.error.HTTPError as e:
                 if e.code in (429, 500, 502, 503, 504) and attempt < 3:
-                    time.sleep(2 ** (attempt + 2))
+                    time.sleep(min(2 ** (attempt + 2), max(0.0, deadline - time.monotonic())))
                     continue
                 raise RuntimeError(f"API HTTP {e.code}: {e.read()[:300]!r}")
             except (urllib.error.URLError, OSError, http.client.HTTPException, json.JSONDecodeError) as e:
                 if attempt < 3:
-                    time.sleep(2 ** (attempt + 2))
+                    time.sleep(min(2 ** (attempt + 2), max(0.0, deadline - time.monotonic())))
                     continue
                 raise RuntimeError(f"API network/response error: {type(e).__name__}: {e}")
 
@@ -636,9 +643,9 @@ class ApiBackend:
         n = ctx["n"]
         messages = [{"role": "system", "content": "You are a careful data-collection agent. Use the tools. Be terse."},
                     {"role": "user", "content": prompt}]
-        total = Usage(cost_usd=0.0)
+        total = self.usage = Usage(cost_usd=0.0)  # self.usage: still readable by the caller if we raise mid-way
         tpath = iter_dir / f"iter-{n:03d}.transcript.jsonl"
-        deadline = time.monotonic() + ctx["timeout"]
+        deadline = time.monotonic() + (ctx["timeout"] or math.inf)
         note, error = "", None
         with open(tpath, "w", encoding="utf-8", buffering=1) as tf:
             tf.write(json.dumps({"role": "user", "content": prompt[:3000]}, ensure_ascii=False) + "\n")
@@ -651,7 +658,7 @@ class ApiBackend:
                     note = f"stopped mid-batch: {why}"
                     break
                 try:
-                    resp = self._chat(messages)
+                    resp = self._chat(messages, deadline)
                 except RuntimeError as e:
                     error = str(e)
                     break
@@ -671,7 +678,7 @@ class ApiBackend:
                         args = json.loads(fn.get("arguments") or "{}")
                     except json.JSONDecodeError:
                         args = {}
-                    res = self._exec(fn["name"], args)
+                    res = self._exec(fn["name"], args, deadline)
                     content = json.dumps(res, ensure_ascii=False)[: self.fetcher.max_chars + 4000]
                     tf.write(json.dumps({"tool": fn["name"], "args": args, "result": content[:1500]}, ensure_ascii=False) + "\n")
                     messages.append({"role": "tool", "tool_call_id": c["id"], "content": content})
@@ -717,6 +724,8 @@ class State:
 
 def finalize(st: State, cfg, log: RunLog, run_dir: Path):
     """Runs in `finally`: must never raise and must leave artefacts for every outcome."""
+    for s in (signal.SIGTERM, signal.SIGINT, signal.SIGHUP):
+        signal.signal(s, signal.SIG_IGN)  # a second signal must not abort the summary
     ended = dt.datetime.now()
     summary = {"run_id": run_dir.name, "name": cfg.get("run", {}).get("name", ""), "status": st.status, "reason": st.reason,
                "exit_code": st.exit_code, "started_at": st.started.isoformat(timespec="seconds"),
@@ -790,16 +799,17 @@ def main(argv=None):
     backend_name = args.backend or run_cfg.get("backend", "claude")
 
     # one run at a time (cron may start a new one while the previous is still going)
-    Path("state").mkdir(exist_ok=True)
-    lock_fd = open("state/runner.lock", "w")
-    try:
-        fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-    except BlockingIOError:
-        Path("runs").mkdir(exist_ok=True)
-        with open("runs/skipped.log", "a") as f:
-            f.write(f"{dt.datetime.now().isoformat(timespec='seconds')} skipped: another run holds the lock\n")
-        print("another run is active; skipping", file=sys.stderr)
-        return EXIT_LOCKED
+    if not args.dry_run:  # --dry-run must not touch any state
+        Path("state").mkdir(exist_ok=True)
+        lock_fd = open("state/runner.lock", "w")
+        try:
+            fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            Path("runs").mkdir(exist_ok=True)
+            with open("runs/skipped.log", "a") as f:
+                f.write(f"{dt.datetime.now().isoformat(timespec='seconds')} skipped: another run holds the lock\n")
+            print("another run is active; skipping", file=sys.stderr)
+            return EXIT_LOCKED
 
     base = dt.datetime.now().strftime("%Y%m%d-%H%M%S")
     run_dir = Path("runs") / base
@@ -807,7 +817,7 @@ def main(argv=None):
     while run_dir.exists():
         k += 1
         run_dir = Path("runs") / f"{base}-{k}"
-    log = RunLog(run_dir)
+    log = RunLog(Path(tempfile.mkdtemp()) if args.dry_run else run_dir)
     st = State()
 
     def _sig(signum, _frame):
@@ -823,13 +833,14 @@ def main(argv=None):
                           LEDGER_REQUIRED_FIELDS=",".join(led_cfg.get("required_fields", [])),
                           LEDGER_REQUIRE_EVIDENCE="1" if led_cfg.get("require_evidence", False) else "0",
                           LEDGER_CLAIM_TIMEOUT=str(led_cfg.get("claim_timeout_seconds", 1800)))
-        ledger = st.ledger = Ledger()
+        in_mem = args.dry_run and not Path(db).exists()  # dry-run on a fresh workdir: scratch ledger, no files
+        ledger = st.ledger = Ledger(":memory:" if in_mem else None)
         st.budget = Budget(lim, bool(lim.get("count_cache_read_tokens", False)))
         task_text = Path(run_cfg.get("task_file", "task.md")).read_text(encoding="utf-8")
         tol = run_cfg.get("expected_tolerance_pct", 0.0)
 
         seed = run_cfg.get("seed_file")
-        if seed and ledger.stats()["total"] == 0:
+        if seed and (in_mem or not args.dry_run) and ledger.stats()["total"] == 0:
             n = ledger.add_lines(Path(seed).read_text(encoding="utf-8").splitlines())
             ledger.meta_set("discovery_complete", "1")
             log.info("seeded ledger with %d items from %s (discovery marked complete)", n, seed)
@@ -858,14 +869,14 @@ def main(argv=None):
             st.status, st.reason, st.exit_code = "dry-run", "dry-run", EXIT_OK
             return EXIT_OK
 
+        # we hold the runner lock, so no agent is running: claims left by a killed/crashed previous run are dead
+        released = ledger.release_in_progress()
+        if released:
+            log.info("released %d in_progress items left by a previous run", released)
         stalled = consec_fail = 0
         feedback = None
         verify_cmd = cfg.get("verify", {}).get("cmd", "")
         while True:
-            why = st.budget.reason()
-            if why:
-                st.status, st.reason, st.exit_code = "stopped", f"limit: {why}", EXIT_LIMIT
-                break
             chk = ledger.check(tol)
             st.last_check = chk
             feedback = None
@@ -876,16 +887,20 @@ def main(argv=None):
                     break
                 feedback = out or "verify command failed with no output"
                 log.warn("ledger complete but verify FAILED: %s", feedback[-300:])
+            why = st.budget.reason()  # after the completeness check: finishing on the last allowed iteration is success
+            if why:
+                st.status, st.reason, st.exit_code = "stopped", f"limit: {why}", EXIT_LIMIT
+                break
             n = st.budget.iterations + 1
             before = ledger.stats()
             sig_before = (before["terminal"], before["total"], before["discovery_complete"], json.dumps(before["meta"], sort_keys=True))
-            timeout = float(lim.get("iteration_timeout_seconds", 1800))
+            timeout = float(lim.get("iteration_timeout_seconds", 1800)) or None  # 0 = no limit
             rem_s = st.budget.remaining_seconds()
             if rem_s is not None:
-                timeout = max(30.0, min(timeout, rem_s))
+                timeout = max(30.0, min(timeout or rem_s, rem_s))
             iter_cap = lim.get("max_cost_usd_per_iteration")
             rem_c = st.budget.remaining_cost()
-            caps = [x for x in (iter_cap, rem_c) if x is not None]
+            caps = [x for x in (iter_cap or None, rem_c) if x is not None]
             ctx = {"n": n, "cwd": str(workdir), "env": env, "timeout": timeout, "ledger_path": ledger_path,
                    "iter_budget_usd": min(caps) if caps else None}
             prompt = build_prompt(task_text, before, cfg, backend.interface, ledger_path, feedback)
@@ -899,7 +914,7 @@ def main(argv=None):
                 raise
             except Exception as e:  # one bad iteration must not kill the whole job: count it as a failure
                 log.logger.exception("iteration %d crashed", n)
-                res = IterResult(False, Usage(), f"{type(e).__name__}: {e}")
+                res = IterResult(False, getattr(backend, "usage", None) or Usage(), f"{type(e).__name__}: {e}")
             finally:
                 st.budget.iterations += 1
             st.budget.add(res.usage)
@@ -915,12 +930,16 @@ def main(argv=None):
             log.info("iter %d end   | ok=%s progress=%s %s%s | +tokens=%s +cost=$%s | %s", n, res.ok, progressed, f"error={res.error} " if res.error else "",
                      f"note={res.note} " if res.note else "", rec["tokens"], f"{res.usage.cost_usd:.4f}" if res.usage.cost_usd is not None else "?",
                      res.summary[:120].replace("\n", " "))
+            if not res.ok:
+                ledger.release_in_progress()  # agent is dead (we only run one), its claims would otherwise sit until claim_timeout
             consec_fail = 0 if res.ok else consec_fail + 1
             stalled = 0 if progressed else stalled + 1
-            if consec_fail >= lim.get("max_consecutive_failures", 3):
+            max_cf = lim.get("max_consecutive_failures", 3)
+            if max_cf and consec_fail >= max_cf:
                 st.status, st.reason, st.exit_code = "stopped", f"{consec_fail} consecutive failed iterations (last: {res.error})", EXIT_FAILURES
                 break
-            if stalled >= lim.get("max_stalled_iterations", 3):
+            max_st = lim.get("max_stalled_iterations", 3)
+            if max_st and stalled >= max_st:
                 st.status, st.reason, st.exit_code = "stopped", f"stalled: no ledger progress in {stalled} iterations", EXIT_STALLED
                 break
         return st.exit_code
