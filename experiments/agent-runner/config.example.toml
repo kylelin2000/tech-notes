@@ -42,7 +42,7 @@ discord_webhook_env = "DISCORD_WEBHOOK_URL"   # if this env var is set, a one-li
 [claude]
 max_turns = 40
 # model = "sonnet"
-# allowed_tools = ["Read", "Write", "WebFetch", "WebSearch", "Bash(python3 /abs/ledger.py *)"]  # default is shown here
+# allowed_tools = ["Read", "Write", "WebFetch", "WebSearch", "Bash(python3 {ledger} *)"]  # {ledger} = abs path of ledger.py
 # extra_args = []
 
 [codex]

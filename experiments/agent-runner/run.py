@@ -373,7 +373,7 @@ class CliBackend:
             if tools is None:
                 tools = ["Read", "Write", "Edit", "WebFetch", "WebSearch", f"Bash(python3 {ctx['ledger_path']} *)"]
             if tools:
-                argv += ["--allowedTools", ",".join(tools)]
+                argv += ["--allowedTools", ",".join(t.replace("{ledger}", ctx["ledger_path"]) for t in tools)]
             return argv + extra, prompt_file  # prompt on stdin (--allowedTools is variadic; keep prompt out of argv)
         if self.name == "codex":
             argv = ["codex", "exec", "--json", "--full-auto", "--skip-git-repo-check"]

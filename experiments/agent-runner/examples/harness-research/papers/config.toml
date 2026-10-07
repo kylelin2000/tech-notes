@@ -1,0 +1,28 @@
+[run]
+name = "harness-papers"
+backend = "claude"
+task_file = "task.md"
+db = "state/ledger.db"
+seed_file = "seed.jsonl"
+batch_size = 3
+allowed_domains = []
+
+[limits]
+max_wall_seconds = 1800
+max_iterations = 4
+max_cost_usd = 2.0
+max_cost_usd_per_iteration = 1.0
+iteration_timeout_seconds = 900
+max_consecutive_failures = 2
+max_stalled_iterations = 2
+
+[ledger]
+max_attempts = 2
+required_fields = ["arxiv_id", "title", "problem", "method", "findings"]
+require_evidence = true
+claim_timeout_seconds = 900
+
+[claude]
+model = "sonnet"
+max_turns = 30
+allowed_tools = ["Read", "Write", "Bash(python3 {ledger} *)"]

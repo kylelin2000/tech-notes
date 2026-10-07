@@ -124,6 +124,14 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(p.returncode, 0, p.stderr[-500:])
         self.assertIn("--max-budget-usd 1.5000", p.stdout)
 
+    def test_allowed_tools_ledger_placeholder(self):
+        d = make_ws()
+        cfg = (d / "config.toml").read_text().replace('backend = "custom"', 'backend = "claude"')
+        (d / "config.toml").write_text(cfg + '[claude]\nallowed_tools = ["Read", "Bash(python3 {ledger} *)"]\n')
+        p = run(d, "--dry-run")
+        self.assertEqual(p.returncode, 0, p.stderr[-500:])
+        self.assertIn(f"Bash(python3 {ROOT / 'ledger.py'} *)", p.stdout)
+
     def test_dry_run_touches_nothing(self):
         d = make_ws()
         p = run(d, "--dry-run")
