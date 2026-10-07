@@ -2,7 +2,7 @@
 
 > **狀態：個人 PoC / 實驗（2026-10-06）**
 > 起因：想讓 AI agent 無人值守跑長時間的「窮舉並整理資料」工作，向 AI 詢問後得到的 draft，作為起點自行試用。
-> 驗證程度：只用假 agent（`tests/fake_agent.py`）與 mock API（`tests/mock_api.py`）測過，**尚未連過真實的 claude / codex / opencode CLI 或真實 LLM 端點**。各 CLI 旗標請先用 `--dry-run` 確認。
+> 驗證程度：claude 後端已實跑（2026-10-07，Claude Code 2.1.292 + Sonnet）：[examples/harness-research](examples/harness-research/) 三個來源共 28 項全數完成，成本由 CLI 回報、非估算。codex / opencode / api 後端仍只用假 agent（`tests/fake_agent.py`）與 mock API（`tests/mock_api.py`）測過，旗標請先用 `--dry-run` 確認。
 > 不是可上線的工具，之後可能改動或捨棄。
 
 讓 claude / codex / opencode CLI、任意自訂指令，或直接打 OpenAI 相容 API，在**無人值守**下跑幾個小時的「窮舉並整理資料」工作。
