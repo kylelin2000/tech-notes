@@ -7,7 +7,7 @@ sec = open(NOTE, encoding="utf8").read().split("## 待讀清單", 1)[1]
 items, prio = [], ""
 for ln in sec.splitlines():
     if ln.startswith("### "): prio = re.sub(r"[（(].*", "", ln[4:]).strip(); continue
-    ls = list(re.finditer(r"\[[^\]]*\]\(https://www\.youtube\.com/watch\?v=([\w-]+)\)", ln))
+    ls = list(re.finditer(r"\]\(https://www\.youtube\.com/watch\?v=([\w-]+)\)", ln))
     if not ls: continue
     hint = ln[ls[-1].end():].lstrip("：").strip()
     items += [(m.group(1), hint, prio) for m in ls]
