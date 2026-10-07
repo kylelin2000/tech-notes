@@ -112,3 +112,15 @@ python3 tests/mock_api.py 8801 8802 &      # 另開終端也可
 ## 爬取的禮貌與合規
 
 只抓你有權抓的內容；遵守網站條款與 robots.txt；`min_delay_seconds` 別設太小；遇到登入牆、CAPTCHA、403/429 是記錄為 `blocked`，不是繞過。
+
+### 避免 429（實測經驗，2026-10）
+
+- **抓一次、存檔、不重抓**：prep 腳本遇到已存在的輸出就跳過（可續跑）；API 搜尋結果存成檔案當快取。
+- **測試也會吃額度**：可行性測試抓過的檔案直接拿去正式試跑，不要同一份資源再抓一次。
+- **被 429 就停**：整批停下、晚點重跑接續；不要密集重試，不用 cookies，不繞過驗證。
+- 各來源：
+  - arXiv API：間隔 3 秒仍會 429，約 15 分鐘後恢復。
+  - Semantic Scholar（未帶 key）：共用額度，幾乎一直 429；要用就申請免費 key。
+  - YouTube 字幕（yt-dlp）：抓幾支就 429，重抓同一支更快被擋。用 `--sleep-subtitles 10`、每支間隔約 30 秒；盡量只要一種字幕語言（`en,en-orig` 等於每支兩次請求）。
+  - OpenReview：審稿回覆回 403 bot challenge，視為拿不到。
+  - 目前沒問題：`gh` 登入後的 GitHub API、HN Algolia API、Anthropic Engineering、simonwillison.net（間隔 3 秒）。
