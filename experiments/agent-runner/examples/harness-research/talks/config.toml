@@ -1,0 +1,28 @@
+[run]
+name = "harness-talks"
+backend = "claude"
+task_file = "task.md"
+db = "state/ledger.db"
+seed_file = "seed.jsonl"
+batch_size = 2                # workshops can be 1-2 h of transcript
+allowed_domains = []
+
+[limits]
+max_wall_seconds = 7200
+max_iterations = 14
+max_cost_usd = 8.0
+max_cost_usd_per_iteration = 2.0
+iteration_timeout_seconds = 1800
+max_consecutive_failures = 2
+max_stalled_iterations = 2
+
+[ledger]
+max_attempts = 2
+required_fields = ["url", "title", "speaker", "summary", "practices", "by_section"]
+require_evidence = true
+claim_timeout_seconds = 1800
+
+[claude]
+model = "sonnet"
+max_turns = 30
+allowed_tools = ["Read", "Write", "Bash(python3 {ledger} *)"]

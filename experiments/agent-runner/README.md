@@ -2,7 +2,7 @@
 
 > **狀態：個人 PoC / 實驗（2026-10-06）**
 > 起因：想讓 AI agent 無人值守跑長時間的「窮舉並整理資料」工作，向 AI 詢問後得到的 draft，作為起點自行試用。
-> 驗證程度：只用假 agent（`tests/fake_agent.py`）與 mock API（`tests/mock_api.py`）測過，**尚未連過真實的 claude / codex / opencode CLI 或真實 LLM 端點**。各 CLI 旗標請先用 `--dry-run` 確認。
+> 驗證程度：claude 後端已實跑（2026-10-07，Claude Code 2.1.292 + Sonnet）：[examples/harness-research](examples/harness-research/) 三個來源共 28 項全數完成，成本由 CLI 回報、非估算。codex / opencode / api 後端仍只用假 agent（`tests/fake_agent.py`）與 mock API（`tests/mock_api.py`）測過，旗標請先用 `--dry-run` 確認。
 > 不是可上線的工具，之後可能改動或捨棄。
 
 讓 claude / codex / opencode CLI、任意自訂指令，或直接打 OpenAI 相容 API，在**無人值守**下跑幾個小時的「窮舉並整理資料」工作。
@@ -112,3 +112,15 @@ python3 tests/mock_api.py 8801 8802 &      # 另開終端也可
 ## 爬取的禮貌與合規
 
 只抓你有權抓的內容；遵守網站條款與 robots.txt；`min_delay_seconds` 別設太小；遇到登入牆、CAPTCHA、403/429 是記錄為 `blocked`，不是繞過。
+
+### 避免 429（實測經驗，2026-10）
+
+- **抓一次、存檔、不重抓**：prep 腳本遇到已存在的輸出就跳過（可續跑）；API 搜尋結果存成檔案當快取。
+- **測試也會吃額度**：可行性測試抓過的檔案直接拿去正式試跑，不要同一份資源再抓一次。
+- **被 429 就停**：整批停下、晚點重跑接續；不要密集重試，不用 cookies，不繞過驗證。
+- 各來源：
+  - arXiv API：間隔 3 秒仍會 429，約 15 分鐘後恢復。
+  - Semantic Scholar（未帶 key）：共用額度，幾乎一直 429；要用就申請免費 key。
+  - YouTube 字幕（yt-dlp）：抓幾支就 429，重抓同一支更快被擋。用 `--sleep-subtitles 10`、每支間隔約 30 秒；每支只抓一條字幕軌：先抓 info.json 挑軌，再用 `--load-info-json` 只下載那一條（實測連抓 21 支、間隔約 45 秒，0 次 429）。
+  - OpenReview：審稿回覆回 403 bot challenge，視為拿不到。
+  - 目前沒問題：`gh` 登入後的 GitHub API、HN Algolia API、Anthropic Engineering、simonwillison.net（間隔 3 秒）。
