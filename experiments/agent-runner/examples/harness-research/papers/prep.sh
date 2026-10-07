@@ -26,7 +26,8 @@ with open("seed.jsonl", "w") as f:
         p = S2[a]
         safe = re.sub(r'[/:]', '_', a); ev = f"evidence/{safe}.pdf"
         open(ev, "wb").write(get(f"https://arxiv.org/pdf/{a}", raw=True)); time.sleep(4)
-        item = {"key": a, "citations": p["citationCount"], "evidence": ev}
+        txt = f"evidence/{safe}.txt"; subprocess.run(["pdftotext", "-layout", ev, txt], check=True)  # Read-friendly text; PDF stays as ledger evidence
+        item = {"key": a, "citations": p["citationCount"], "evidence": ev, "text": txt}
         q = urllib.parse.urlencode({"term": p["title"], "source": "forum", "limit": 10})
         for n in get("https://api2.openreview.net/notes/search?" + q)["notes"]:
             if norm(n["content"]["title"]["value"]) == norm(p["title"]) and n["id"] == n["forum"]:

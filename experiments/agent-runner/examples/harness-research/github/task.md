@@ -1,8 +1,8 @@
 # Task: 讀開源 agent harness / 框架的 repo，整理它的實作方式
 
 ## Item
-帳本 key = owner/repo。payload 有 stars、evidence（README）、tree（檔案樹，evidence/<安全名>.tree.txt）。
-兩個檔案都要讀；檔案樹用來推斷架構（主迴圈、工具、prompt 放在哪）。
+帳本 key = owner/repo。payload 有 stars、evidence（README）、tree（已過濾、依深度排序的檔案樹）、docs（架構文件路徑清單，可能為空）。
+讀 README、payload.docs 列出的每個文件、以及檔案樹；檔案樹用來推斷架構（主迴圈、工具、prompt 放在哪）。仍只能從檔名推斷的內容一律標「推測」。
 
 ## Fields
 - repo（必填）

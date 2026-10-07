@@ -3,7 +3,10 @@
 背景：agent harness = 驅動 LLM agent 的外層程式——迴圈、工具定義、context 管理、權限、評測、長時間任務的狀態保存。
 
 ## Item
-帳本 key = 文章 URL。payload 有 source、evidence（已下載的 HTML）。
+帳本 key = 文章 URL。payload 有 source、evidence（已下載的原始 HTML）、text（去除標籤後的純文字，第一行是標題）。
+
+## 怎麼讀
+用 Read 讀 payload.text（長文用 offset/limit 分段讀完）。只有在 text 看起來缺內容時才讀原始 HTML。
 
 ## Fields
 - url, title, source（必填）
