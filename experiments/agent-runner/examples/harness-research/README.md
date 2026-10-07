@@ -13,4 +13,6 @@ uv run --python 3.12 ../../../run.py --config config.toml
 
 talks 需要 yt-dlp。YouTube 字幕端點很容易 429：prep.sh 每支間隔約 45 秒，被擋就停下，之後重跑會從沒抓到的那支接續。
 
+全量試跑（2026-10-07，claude sonnet）：talks 21/21 done，10 批、14 分鐘、$3.78；prep 約 15 分鐘、0 次 429。
+
 學術論文（Semantic Scholar + arXiv）試過後拿掉：未帶 key 的 S2 API 幾乎一直 429，且重點是實務做法而非論文。

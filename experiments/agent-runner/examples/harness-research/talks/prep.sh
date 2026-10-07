@@ -35,16 +35,28 @@ stop = None
 for n, (v, hint, prio) in enumerate(items):
     if os.path.exists(f"evidence/{v}.txt"): continue
     if n: time.sleep(30)  # YouTube 429s the subtitle endpoint quickly
-    r = subprocess.run(["yt-dlp", "--skip-download", "--sleep-subtitles", "10", "--write-info-json", "--write-subs", "--write-auto-subs",
-        "--sub-langs", "en,en-orig", "--sub-format", "vtt", "-o", "evidence/%(id)s.%(ext)s",
-        "https://www.youtube.com/watch?v=" + v], capture_output=True, text=True)
-    if re.search(r"Sign in|not a bot|429", r.stderr):
+    YT = ["yt-dlp", "--skip-download", "-o", "evidence/%(id)s.%(ext)s"]
+    BLOCK = r"Sign in|not a bot|HTTP Error 429|Too Many Requests"
+    r = subprocess.run(YT + ["--write-info-json", "https://www.youtube.com/watch?v=" + v], capture_output=True, text=True)  # metadata only
+    if re.search(BLOCK, r.stderr):
         stop = f"STOP at {v}: YouTube is blocking (sign-in/bot check/429). Not bypassing; rerun later. Done items kept."; break
     try: info = json.load(open(f"evidence/{v}.info.json"))
     except OSError: print("WARN", v, "yt-dlp failed:", r.stderr.strip()[-200:]); continue
-    manual = [k for k in (info.get("subtitles") or {}) if k.startswith("en")]
-    cands = [f"evidence/{v}.{k}.vtt" for k in manual] + [f"evidence/{v}.en-orig.vtt", f"evidence/{v}.en.vtt"]
-    f = next((c for c in cands if os.path.exists(c)), None)
+    subs, auto = info.get("subtitles") or {}, info.get("automatic_captions") or {}
+    man = [k for k in subs if k == "en" or k.startswith("en-")]
+    lang = "en" if "en" in man else man[0] if man else None
+    flag = "--write-subs"
+    if not lang:
+        flag, lang = "--write-auto-subs", next((k for k in ("en-orig", "en") if k in auto), None)
+    f = None
+    if lang:  # exactly one subtitle request: reuse the info.json instead of re-fetching the page
+        print("TRACK", v, "manual" if flag == "--write-subs" else "auto", lang)
+        r = subprocess.run(YT + ["--load-info-json", f"evidence/{v}.info.json", flag, "--sub-langs", lang,
+            "--sub-format", "vtt", "--sleep-subtitles", "10"], capture_output=True, text=True)
+        if re.search(BLOCK, r.stderr):
+            os.remove(f"evidence/{v}.info.json")
+            stop = f"STOP at {v}: YouTube is blocking (sign-in/bot check/429). Not bypassing; rerun later. Done items kept."; break
+        f = next(iter(glob.glob(f"evidence/{v}.*.vtt")), None)
     if f:
         open(f"evidence/{v}.txt", "w", encoding="utf8").write(vtt2txt(f))
         json.dump({"id": v, "title": info.get("title"), "channel": info.get("channel") or info.get("uploader"),
@@ -53,8 +65,6 @@ for n, (v, hint, prio) in enumerate(items):
             "description": (info.get("description") or "")[:500]},
             open(f"evidence/{v}.meta.json", "w", encoding="utf8"), ensure_ascii=False, indent=1)
     else: print("WARN", v, "no English captions; left out of seed")
-    for g in glob.glob(f"evidence/{v}.*.vtt"):
-        if g != f: os.remove(g)
     os.remove(f"evidence/{v}.info.json")
 
 with open("seed.jsonl", "w", encoding="utf8") as o:
