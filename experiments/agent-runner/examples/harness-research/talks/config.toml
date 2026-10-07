@@ -1,5 +1,5 @@
 [run]
-name = "harness-papers"
+name = "harness-talks"
 backend = "claude"
 task_file = "task.md"
 db = "state/ledger.db"
@@ -18,7 +18,7 @@ max_stalled_iterations = 2
 
 [ledger]
 max_attempts = 2
-required_fields = ["arxiv_id", "title", "problem", "method", "findings"]
+required_fields = ["url", "title", "speaker", "summary", "practices", "by_section"]
 require_evidence = true
 claim_timeout_seconds = 900
 
