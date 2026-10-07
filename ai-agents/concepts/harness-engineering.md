@@ -1,6 +1,6 @@
 # Harness Engineering 實作筆記
 
-整理自 YouTube 頻道 AI Engineer (@aiDotEngineer) 搜尋 "harness" 的結果，目的是萃取對實作 agent harness 有用的做法，並標註每項資訊的來源影片。
+整理自 YouTube 頻道 AI Engineer (@aiDotEngineer) 搜尋 "harness" 的結果，另補 3 篇工程文章與 3 個開源 harness repo，目的是萃取對實作 agent harness 有用的做法，並標註每項資訊的來源。
 
 - 整理日期：2026-10-06；2026-10-07 補入待讀清單的 22 支（由 agent 讀逐字稿後整理，見「範圍與方法」）
 - 性質：個人學習筆記，非官方內容。內容為對公開演講的中文摘要與歸納，版權屬原講者與 AI Engineer，細節與數據請以原影片為準。
@@ -45,6 +45,7 @@
 - 規劃 human-in-the-loop，實作才 AFK（人類日班、AI 夜班）；不要連想法、研究、QA 都自動化，否則產出缺乏品味的 slop，QA 是把人的品味灌回 codebase 的時機。[Pocock]
 - Codebase 本身就是 harness：模組化、相關程式碼放一起、用模型熟悉的慣例（package.json 的 start script）、提供既有範例讓 agent 照抄；deep module（小介面、大功能）讓 agent 好導航好測試，AI 沒人看管時傾向產出 shallow 結構。[Zakariasson] [Pocock]
 - 從小開始：目標先抓 2 到 3 倍而不是 100 倍；不要閉關三個月蓋 software factory，從小的增量 loop 開始交到同事手上；先做單一序列 loop，別急著平行。[LoopsDebate] [Parsons]
+- 核心要小、能力放 plugin：把模型 context 成本當成核心的持續開銷，可選能力放邊緣；新能力依 capability ladder 決定放哪層（既有 owner → 既有 plugin 契約 → 窄的通用 SDK 能力 → 最後才動核心介面）。DeepSeek 的 harness 更徹底，連 shell、fs、todo、plan、compaction 都是 plugin，loop 本身只留文件化的擴充點。[OpenClaw-repo] [DeepSeek-H]
 
 ## Agent loop 與控制流
 
@@ -96,6 +97,8 @@
 - 像 agent 一樣思考：把自己放進它 10 到 20k tokens 的 context 實際走一遍任務，找出缺的資訊（computer use 範例缺螢幕解析度與建議動作，等於閉眼操作）。[Zhang-EA]
 - 每次 tool call 的結果存成檔案、tool 只回傳路徑，長輸出也這樣處理，之後可搜尋覆查而不撐爆 context。大資料不要整份讀：給起始片段（如前 10 列），讓 agent 像人一樣導覽、grep、維護 scratch pad。[Shihipar]
 - Server-side 狀態：用 interaction ID 帶回 context，免去自行管理 thought signatures，也避免多一個空白就 cache miss。[Leo]
+- 為 prompt prefix cache 保持對話穩定：不重建過往 context，新增的 prompt / tool / context 要有界且確定，transcript bytes 不變，只有 compaction 可以改寫歷史；穩定 prompt 的變更延到下個 session 才生效。[OpenClaw-repo]
+- Context 修剪的 bug 很難抓：Claude Code 為了配合 prompt cache 過期，在閒置 session 清除舊 thinking，本應只做一次卻變成每回合都清，agent 因此健忘、重複，還造成 cache miss 與用量暴增。修剪邏輯要測「閒置後恢復」「工具執行中途追問」這類邊界情況。[Anthropic-PM]
 
 ## 工具 (Tools) 與 Skills
 
@@ -154,6 +157,7 @@
 - 讓系統可驗證：agent 能自己啟動專案並自測（Playwright e2e），UI 變更錄影回傳給人看。Agentic code owner 先評估 PR 風險，低風險自動核准、高風險找改過該處的人（約 80% 正確、20% 造成阻塞 (@27:01)）。[Zakariasson]
 - 把「測試通過不夠，要驗證實際行為」寫進 skill；同一個 context 自我驗證會自我肯定，交給只帶少量 context 的 sub-agent。[Parsons]
 - 驗證不只放在最後：有規則就在中途丟 error 並附回饋（Claude Code 在 agent 寫入「還沒讀過的檔案」時直接報錯要它先讀），模型會讀 error 自己調整；用 hook 偵測「沒寫 script 查資料就直接回答」並要求實際去讀。[Shihipar]
+- 不靠真實 API 的回歸測試：錄製 session 快照（model 或使用者看得到的變更都要更新快照，無 key 即可重放）[DeepSeek-H]；以 mock 的模型服務腳本化回應、子程序啟動 CLI 跑 parity 情境 [ClawCode]。可機械檢查的不變式寫成 CI gate（如每檔 100% coverage、重複程式碼偵測）。[DeepSeek-H]
 
 ## 記憶 (Memory)
 
@@ -191,6 +195,11 @@
 - 不可逆判準：「這件事能不能不尷尬地復原？」不能就不做，留註記交還給人。實作：email 只准草稿、AI 專屬金鑰保留稽核軌跡、開發工具唯讀、跑在獨立 VPS；留意 lethal trifecta（不可信輸入 + 網路 + 機密資料同在）。[Parsons]
 - 依角色設 sandbox：review 與資安分析類 subagent 一律 read-only，要產文件的才給寫入。Guardian approvals（Codex 實驗功能）讓 subagent 判斷特權操作要不要叫人，以降低核准疲勞、取代 YOLO mode，概念同 [Kundel] 的 auto-review（講者現場示範沒成功）。[Codex-MC]
 - 用 hook 禁止 agent 修改最敏感的區域（加密、認證）；為特定 invariant 建 security sentinel automation，只在改到相關檔案的 PR 上跑。[Zakariasson]
+- Containment 優先於 human-in-the-loop：使用者約核准 93% 的 permission prompt，審核疲勞讓人工把關不可靠。Claude Code 用 OS 級 sandbox（Seatbelt / bubblewrap）預設允許讀取、寫入限於 workspace、網路預設禁止，沙箱內不再打斷使用者，permission prompt 減少 84%。[Anthropic-Contain]
+- 隔離強度配合使用者的監督能力：claude.ai 用 gVisor 臨時容器；Claude Code 用 OS sandbox 加人工核准（開發者看得懂 bash）；Cowork 面向非技術使用者，用本機 VM 當常開的硬邊界，憑證留在 host keychain，VM 只拿 per-session、可撤銷的縮權 token。[Anthropic-Contain]
+- 事故教訓是「自己寫的元件最脆弱」：trust dialog 之前就執行了 project hook、allowlist 內的 api.anthropic.com 被拿來外洩資料，而 hypervisor、seccomp、gVisor 都守住了。對應做法：project-open、config-load、localhost listener 一律視同外部請求；egress allowlist 當成 capability grant（VM 內的 MITM proxy 只放行帶本 VM session token 的請求）；symlink 先解析再驗證路徑；掛載分 read-only、read-write、read-write-no-delete。[Anthropic-Contain]
+- Agent loop 放在 VM 外、只把程式碼執行放進 VM（VM 起不來時 agent 仍能回應除錯，同 [Bhat&He] 的 brain / hands 分離）；tool 回傳值進入 context 前由小而快的 classifier 檢查。Auto mode 的 classifier 約擋下 83% 過度積極行為、誤擋約 0.4% 良性指令，只能當縱深防禦的一層。[Anthropic-Contain]
+- 瀏覽器本身就是 sandbox：檔案用 File System Access API（目前僅 Chrome）、網路用 CSP + `<iframe sandbox>`、程式碼執行放 Web Worker 裡的 WebAssembly，不需要數 GB 的本機容器。[Willison]
 
 ## 狀態，可靠性與可觀測
 
@@ -209,6 +218,8 @@
 - 保存完整 trajectory（planning、code、observation、sub-call、budget）成 JSONL，可接任何 observability 平台。[Shashi]
 - 監看背景 agent：跑了多久、有沒有碰任何檔案、有沒有原地打轉 (loop detection)。長任務要有 mission control 畫面：進度、預算消耗、目前 worker、handoff 摘要。[Zakariasson] [Alvoeiro]
 - Telemetry in the loop：harness 知道哪裡壞了、花了多少，就能自我修正後繼續。[Koc]
+- Model-visible ⟺ logged：任何進入 model request 的內容都必須能從 session log 重建，新增 model 可見的輸入就要新增 session event；已發佈的 session 格式只能加新版本，不得覆寫或刪除。可與 [Templestein] [Warrick] 的事件日誌對照。[DeepSeek-H]
+- 每項狀態只有一個 owner，caller 只消費 owner 記錄的事實，快取與 projection 由 owner 衍生並有明確失效週期；SQLite 存取走 worker thread（多讀、單一寫入 broker），不在主執行緒做。對應 [Govindarajan] 的單一寫入者。[OpenClaw-repo]
 
 ## 長時間，非同步與組織級 harness
 
@@ -225,6 +236,7 @@
 - 個人級的多種 loop：worker loop（從專案檔挑下一步）、morning loop（早上 6 點簡報）、15 分鐘 heartbeat（查行事曆、傳訊息）。人永遠是審查瓶頸（隔夜產出 30 件待審）。[Parsons]
 - 瓶頸理論：先修最大的瓶頸（審查、發佈），否則 AI 反而讓部分團隊變慢；協調問題可能其實是團隊太大。AI 產出變 2 到 3 倍後，團隊協作方式必須重整（Horthy 的三人團隊花了八週）。[Parsons] [Horthy-NV]
 - 歸責：Git 一個 commit 只有一位 signer，agent 的行為最終必須能歸因到人。[LoopsDebate]
+- AGENTS.md 當成 agent 的工作守則：分層、scoped AGENTS.md、程式碼地圖與 anti-patterns，並明定 agent 與人類維護者的授權邊界（例：自動化流程不得合併或關閉 PR / issue，不得直接 push main）。[OpenClaw-repo] [ClawCode]
 
 ## 成本與模型選擇
 
@@ -237,6 +249,7 @@
 - 「就燒 token，優化自己的時間」[Parsons] [Horthy-NV]；反方：失敗不會靜默，而是從帳單上大聲出現，疊 loop 不能用 token 買品質 [LoopsDebate]。
 - Agent 缺乏 workflow 那樣的成本 / 延遲控制，需要能以時間、金錢、tokens 定義並強制執行的 budget（開放問題）。[Zhang-EA]
 - 換模型不要當最早採用者，等幾週看是否經得起考驗；同一個模型在不同 harness 上表現不同，所以 eval 同時在測模型、harness 與題目品質。[Khan]
+- 預設 reasoning effort 是產品層的取捨：Claude Code 曾把預設由 high 降到 medium 換取延遲與用量，使用者感受到智能下降後改回；使用者寧可預設高、簡單任務再自行調低，改預設時要在 UI 清楚顯示。[Anthropic-PM]
 
 ## 持續改進與評估 (evals)
 
@@ -253,6 +266,7 @@
 - 讓 agent 讀過去的 session，建議該新增哪些 automation、subagent 或 rule。[Codex-MC] [Zakariasson]
 - 新模型推出時先拿掉既有 skills / markdown，用裸模型重新驗證：不同模型偏好不同（例如對全大寫強調的反應相反）。[LoopsDebate]
 - 把一次表現極佳的 "golden session" 交給 agent 拆成可重用的 workflow。[Weitekamp]
+- Harness 變更要當成模型變更來發布（Claude Code 品質事件）：三個 harness 層變更（預設 effort、清除舊 thinking 的 bug、system prompt 加字數限制）疊加後看起來像模型退化，API 與推論層其實沒動；code review、單元與 e2e 測試、dogfooding、原有 eval 都沒抓到。改進：每次 system prompt 變更跑跨模型的廣泛 eval 並逐行 ablation（這樣才看到 3% 的下降）、與特定模型相關的調整綁定該模型、soak period 加漸進 rollout、內部人員使用與公開版相同的 build。[Anthropic-PM]
 
 ## 反例，風險與爭議點
 
@@ -269,6 +283,7 @@
 - Cognitive debt：不審查就失去對 codebase 的掌握；senior 工程師因為要清理 AI slop 越來越討厭 AI，staff 不用、junior 大量用，造成團隊裂痕。[Parsons] [Horthy-NV] [Pocock]
 - Software factory 目前沒人真正解決：Huntley 自己的 Loom 六個月沒進展，Cursor 講者也承認尚未完全做到。[LoopsDebate] [Zakariasson]
 - PM 用 vibe coding 做的 prototype 交給工程遷移很痛苦；建議把可互動的前端原型當成「意圖」交付，由工程重寫。[Zakariasson]
+- Multi-agent 的新 injection 途徑：sub-agent 的輸出若被賦予較高信任會形成 trust escalation；長期記憶（CLAUDE.md、memory）被污染後每次啟動都會重新載入。[Anthropic-Contain]
 
 ### 意見分歧
 
@@ -306,6 +321,8 @@
 - Gemini Interactions API 與 Managed Agents。[Leo]
 - AI Research OS（index.yaml + wiki 的檔案式記憶，開源 repo）。[Iusztin&Bouchard]
 - Codex plugins、automations、subagents、hooks、guardian approvals；Factory Missions；Cursor cloud agents、Bugbot。[Codex-MC] [Alvoeiro] [Zakariasson]
+- 可參考的開源 harness：OpenClaw（Gateway + plugin 架構，AGENTS.md 是很完整的 agent 工作守則）、DeepSeek Harness `dsh`（everything-is-a-plugin、session 快照測試）、claw-code（Claude Code 風格 CLI 的 Rust 實作，自稱展示用而非正式產品）。[OpenClaw-repo] [DeepSeek-H] [ClawCode]
+- Paul Kinlan 的瀏覽器 sandbox 文章與 Co-do 示範專案（經 [Willison] 轉介）。
 
 ---
 
@@ -333,6 +350,7 @@
 - 標（部分）的影片只讀了關鍵字附近段落與資訊欄，包含 [Prabaker] [Bakaus] [Templestein] [Bhardwaj] [Pai]；其中 [Prabaker] 在內文引用較多，細節請特別回原片確認。
 - [WF26] 為 9 小時直播，只取了少數段落，引用的數據未經深讀驗證。
 - 廠商影片（Oracle、Docker、Cast AI、RELAI）立場偏向自家產品，「意見分歧」一節已盡量並列其他講者的觀點。
+- 同日另補 3 篇工程文章與 3 個開源 harness repo（索引「文章與程式庫」）：文章由 agent 讀全文；repo 只讀 README、AGENTS.md / CLAUDE.md 與檔案樹，沒有讀原始碼，架構描述以這些文件為準。
 - 2026-10-07 補入的 22 支（索引中「agent 摘要」者）：用 [agent-runner](../../experiments/agent-runner/examples/harness-research/) 抓英文自動字幕，由 Claude Sonnet 逐支讀完整逐字稿，依本筆記章節產出結構化摘要（每點附時間），再由 Claude Opus 挑選、去重後併入。沒有人逐支回看影片；自動字幕會聽錯人名與數字，數字後附 (@mm:ss) 方便核對。W&B、Google、Temporal、Factory、Cursor、OpenAI Codex、Anthropic（Skills、Agent SDK）這幾場被 agent 判定為較重的產品宣傳。
 
 ---
@@ -397,6 +415,17 @@
 | Iusztin&Bouchard | [Turn 10,994 Notes Into Memory, Paul Iusztin & Louis-François Bouchard](https://www.youtube.com/watch?v=ZRM_TfEZcIo) | 全文 (agent 摘要) |
 | Zhang-EA | [How We Build Effective Agents, Barry Zhang (Anthropic, 2025)](https://www.youtube.com/watch?v=D7_ipDqhtwk) | 全文 (agent 摘要) |
 | Shihipar | [Claude Agent SDK [Full Workshop], Thariq Shihipar (Anthropic)](https://www.youtube.com/watch?v=TqC1qOfiVcQ) | 全文 (agent 摘要，廠商性質) |
+
+### 文章與程式庫
+
+| 簡稱 | 來源 | 讀取程度 |
+|---|---|---|
+| Anthropic-Contain | [How we contain Claude across products (Anthropic Engineering)](https://www.anthropic.com/engineering/how-we-contain-claude) | 全文 (agent 摘要) |
+| Anthropic-PM | [An update on recent Claude Code quality reports (Anthropic Engineering)](https://www.anthropic.com/engineering/april-23-postmortem) | 全文 (agent 摘要) |
+| Willison | [the browser is the sandbox, Simon Willison](https://simonwillison.net/2026/Jan/25/the-browser-is-the-sandbox/) | 全文 (agent 摘要，轉介 Paul Kinlan 的文章) |
+| OpenClaw-repo | [openclaw/openclaw](https://github.com/openclaw/openclaw) | README + AGENTS.md + 檔案樹 (agent 摘要) |
+| DeepSeek-H | [deepseek-ai/deepseek-harness](https://github.com/deepseek-ai/deepseek-harness) | README + AGENTS.md + 檔案樹 (agent 摘要) |
+| ClawCode | [ultraworkers/claw-code](https://github.com/ultraworkers/claw-code) | README + AGENTS.md + 檔案樹 (agent 摘要) |
 
 ## 待讀清單
 
