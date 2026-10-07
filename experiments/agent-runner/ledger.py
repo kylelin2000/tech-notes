@@ -213,6 +213,14 @@ class Ledger:
         self._terminal(key, "not_found", reason)
 
     # ---- meta -----------------------------------------------------------
+    def abort(self, reason):
+        """The environment is broken, so no item can succeed (missing tool, no network, bad auth). Stops the run without
+        burning attempts: claims made this batch are handed back and refunded. run.py clears the flag on its next start."""
+        now = time.time()
+        with self._tx():
+            self.db.execute("UPDATE items SET status='pending', attempts=MAX(attempts-1,0), updated_at=? WHERE status='in_progress'", (now,))
+            self.db.execute("INSERT INTO meta(key,value) VALUES('abort_reason',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", (reason,))
+
     def meta_set(self, k, v):
         with self._tx():
             self.db.execute("INSERT INTO meta(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", (k, str(v)))
@@ -289,6 +297,7 @@ def main(argv=None):
     p = sub.add_parser("fail"); p.add_argument("key"); p.add_argument("--error", required=True)
     p = sub.add_parser("blocked"); p.add_argument("key"); p.add_argument("--reason", required=True)
     p = sub.add_parser("not-found"); p.add_argument("key"); p.add_argument("--reason", default="not found on site")
+    p = sub.add_parser("abort"); p.add_argument("--reason", required=True)
     sub.add_parser("stats")
     p = sub.add_parser("check"); p.add_argument("--tolerance-pct", type=float, default=0.0)
     p = sub.add_parser("meta-set"); p.add_argument("key"); p.add_argument("value")
@@ -314,6 +323,8 @@ def main(argv=None):
             L.blocked(a.key, a.reason); out = {"ok": True}
         elif a.cmd == "not-found":
             L.not_found(a.key, a.reason); out = {"ok": True}
+        elif a.cmd == "abort":
+            L.abort(a.reason); out = {"ok": True}
         elif a.cmd == "stats":
             out = L.stats()
         elif a.cmd == "check":

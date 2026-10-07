@@ -98,6 +98,32 @@ class RunnerTests(unittest.TestCase):
         p = run(d)
         self.assertEqual(p.returncode, 0, p.stderr[-500:])
 
+    def test_abort_stops_and_refunds_attempts(self):
+        d = make_ws()
+        p = run(d, mode="abort")
+        self.assertEqual(p.returncode, 6, p.stderr[-500:])
+        s = last_summary(d)
+        self.assertEqual(s["status"], "aborted")
+        self.assertEqual(s["iterations"], 1)
+        L = Ledger(str(d / "state" / "ledger.db"))
+        self.assertEqual(L.stats()["counts"]["pending"], 2)
+        self.assertEqual([r["attempts"] for r in L.rows(("pending",))], [0, 0])
+        p = run(d)  # operator fixed the environment: next run clears the flag and finishes
+        self.assertEqual(p.returncode, 0, p.stderr[-500:])
+
+    def test_exhausted_retries_not_reported_as_success(self):
+        d = make_ws("max_stalled_iterations = 0\nmax_iterations = 20")
+        p = run(d, mode="failall")
+        self.assertEqual(p.returncode, 5, p.stderr[-500:])
+        self.assertEqual(last_summary(d)["status"], "completed_with_problems")
+
+    def test_dry_run_shows_per_iteration_budget(self):
+        d = make_ws("max_cost_usd = 3\nmax_cost_usd_per_iteration = 1.5")
+        (d / "config.toml").write_text((d / "config.toml").read_text().replace('backend = "custom"', 'backend = "claude"'))
+        p = run(d, "--dry-run")
+        self.assertEqual(p.returncode, 0, p.stderr[-500:])
+        self.assertIn("--max-budget-usd 1.5000", p.stdout)
+
     def test_dry_run_touches_nothing(self):
         d = make_ws()
         p = run(d, "--dry-run")

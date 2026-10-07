@@ -56,10 +56,13 @@ python3 run.py --config config.toml             # 正式跑（Python 3.11+，無
 |---|---|---|
 | `max_wall_seconds` | 迴圈每次開始前；每批逾時會被縮短到剩餘時間 | 硬（整個 process group 會被殺掉） |
 | `iteration_timeout_seconds` | 單批逾時 → kill process group | 硬 |
+| 環境問題（缺工具、沒網路、認證失敗） | agent 呼叫 `ledger.py abort --reason`，整個 run 停止（exit 6）、該批 claim 的 attempts 退回；修好環境後重跑會自動清除 abort | 盡力（靠 agent 回報） |
 | `max_iterations`、`max_consecutive_failures`、`max_stalled_iterations` | 批與批之間 | 硬 |
 | `max_cost_usd_per_iteration` | claude：傳給 `--max-budget-usd`，由 CLI 在執行中強制 | 硬（claude） |
 | `max_total_tokens` / `max_cost_usd` | **api 後端**：每次呼叫後檢查，批次中途就停。**CLI 後端**：批與批之間檢查 | api 硬；CLI 可能超出「一批」的量 |
 | CLI 的 token / 成本數字 | claude：讀 JSON 的 `usage` 與 `total_cost_usd`。codex：讀 `--json` 的 `turn.completed.usage`。其他：解析不到就用字元數估算（報告會標 ESTIMATED） | 盡力 |
+
+註：`max_wall_seconds` 用真實時間（time.time），包含系統睡眠；`iteration_timeout_seconds`（subprocess timeout）不計睡眠。
 
 所以：**批量要小**（`batch_size`、`max_turns`），CLI 後端最多只會超出一批的量。真正的最後防線請在供應商那端設**每月/專案支出上限**或給 API key 額度，這是程式之外唯一不會被 bug 繞過的一層。
 
@@ -76,7 +79,7 @@ python3 run.py --config config.toml             # 正式跑（Python 3.11+，無
 
 被 `kill`（SIGTERM/SIGINT/SIGHUP）、崩潰、達到上限時 `finally` 一樣會寫出上述檔案。`kill -9` 或機器斷電無法攔截，但 `run.log`、`events.jsonl` 與帳本是逐步寫入的，仍保有到當時為止的紀錄。
 
-Exit code：`0` 完成｜`1` 錯誤｜`2` 達到上限｜`3` 停滯｜`4` 連續失敗｜`75` 已有另一個在跑｜`130` 被中斷
+Exit code：`0` 完成｜`1` 錯誤｜`2` 達到上限｜`3` 停滯｜`4` 連續失敗｜`5` 完成但有 failed 項目｜`6` agent 回報環境壞掉（abort）｜`75` 已有另一個在跑｜`130` 被中斷
 
 ## 各後端注意事項
 

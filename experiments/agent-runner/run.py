@@ -40,7 +40,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from ledger import Ledger, LedgerError  # noqa: E402
 
-EXIT_OK, EXIT_ERROR, EXIT_LIMIT, EXIT_STALLED, EXIT_FAILURES, EXIT_LOCKED, EXIT_INTERRUPTED = 0, 1, 2, 3, 4, 75, 130
+EXIT_OK, EXIT_ERROR, EXIT_LIMIT, EXIT_STALLED, EXIT_FAILURES, EXIT_PROBLEMS, EXIT_ABORTED, EXIT_LOCKED, EXIT_INTERRUPTED = 0, 1, 2, 3, 4, 5, 6, 75, 130
 HERE = Path(__file__).resolve().parent
 
 
@@ -95,7 +95,7 @@ class Budget:
     def __init__(self, lim: dict, count_cache_read: bool):
         self.lim = lim
         self.count_cache_read = count_cache_read
-        self.t0 = time.monotonic()
+        self.t0 = time.time()  # wall clock: monotonic() stops during macOS sleep
         self.u = Usage(cost_usd=0.0)
         self.iterations = 0
         self.cost_unknown = False
@@ -106,7 +106,7 @@ class Budget:
 
     @property
     def elapsed(self):
-        return time.monotonic() - self.t0
+        return time.time() - self.t0
 
     def add(self, u: Usage):
         self.u.input += u.input
@@ -138,6 +138,10 @@ class Budget:
             return None
         return max(0.0, self.lim["max_cost_usd"] - (self.u.cost_usd or 0.0))
 
+    def iter_cap(self):
+        caps = [x for x in (self.lim.get("max_cost_usd_per_iteration") or None, self.remaining_cost()) if x is not None]
+        return min(caps) if caps else None
+
     def remaining_seconds(self):
         if not self.lim.get("max_wall_seconds"):
             return None
@@ -161,6 +165,7 @@ Hard rules
 - Save the raw page you based the result on under ./evidence/ and pass it as evidence.
 - Login wall, CAPTCHA, 401/403/429, robots.txt disallow -> mark the item `blocked` with the reason. Do NOT try to bypass.
 - The page genuinely has no such data -> `not-found`. Temporary error (timeout, 5xx) -> `fail` (it will be retried).
+- The ENVIRONMENT is broken so no item can succeed (missing system tool, no network, auth failure) -> do NOT fail items: `abort` with the reason, then stop. The operator fixes it and reruns.
 - Stay inside these domains: {domains}. Do not visit anything else.
 - Do at most {batch} items in this batch, then stop and reply with ONE line summarising what you did.
 """
@@ -175,11 +180,13 @@ LEDGER_CLI = """Ledger (use only this; run from the current directory):
   python3 {ledger} meta-set discovery_cursor VALUE  -> remember where enumeration stopped (read via stats)
   python3 {ledger} set-expected N                   -> the total the site itself reports, if it shows one
   python3 {ledger} discovery-complete               -> ONLY when enumeration is exhaustive
+  python3 {ledger} abort --reason "why"            -> environment broken: stop the whole run (claims are refunded)
   python3 {ledger} stats
+Run each ledger command as its own separate Bash call, exactly as shown: no loops, `;`, `&&`, pipes, `cd`, or shell variables (the allowlist rejects them).
 """
 
 LEDGER_TOOLS = """Ledger tools: ledger_claim, ledger_done, ledger_fail, ledger_blocked, ledger_not_found, ledger_add,
-ledger_meta_set(key,value) (e.g. discovery_cursor), ledger_set_expected, ledger_discovery_complete, ledger_stats.
+ledger_meta_set(key,value) (e.g. discovery_cursor), ledger_set_expected, ledger_discovery_complete, ledger_abort(reason), ledger_stats.
 Fetch pages ONLY with the `fetch` tool (it saves evidence and returns the evidence path)."""
 
 MODE_DISCOVERY = """Mode: DISCOVERY. The list of items is not complete yet.
@@ -566,6 +573,7 @@ TOOLS = [
     _tool("ledger_meta_set", "Store a value, e.g. discovery_cursor.", {"key": S, "value": S}, ["key", "value"]),
     _tool("ledger_set_expected", "Total the site itself reports.", {"n": I}, ["n"]),
     _tool("ledger_discovery_complete", "Mark enumeration exhaustive. Only when truly at the end.", {}),
+    _tool("ledger_abort", "Environment broken, no item can succeed: stop the whole run. Do not fail items for this.", {"reason": S}, ["reason"]),
     _tool("ledger_stats", "Current ledger counts.", {}),
 ]
 
@@ -611,6 +619,8 @@ class ApiBackend:
                 L.meta_set("expected_total", int(args["n"])); return {"ok": True}
             if name == "ledger_discovery_complete":
                 L.meta_set("discovery_complete", "1"); return {"ok": True}
+            if name == "ledger_abort":
+                L.abort(args["reason"]); return {"ok": True, "note": "run will stop; end this batch now"}
             if name == "ledger_stats":
                 return L.stats()
             return {"error": f"unknown tool {name}"}
@@ -864,7 +874,7 @@ def main(argv=None):
             prompt = build_prompt(task_text, stats, cfg, backend.interface, ledger_path, None)
             print("----- PROMPT -----\n" + prompt)
             if isinstance(backend, CliBackend):
-                argv_, stdin_ = backend.build_argv(prompt, Path("<prompt_file>"), {"iter_budget_usd": st.budget.remaining_cost(), "ledger_path": ledger_path})
+                argv_, stdin_ = backend.build_argv(prompt, Path("<prompt_file>"), {"iter_budget_usd": st.budget.iter_cap(), "ledger_path": ledger_path})
                 print("\n----- COMMAND -----\n" + " ".join(a if len(a) < 120 else "<prompt>" for a in argv_) + (" < prompt_file" if stdin_ else ""))
             st.status, st.reason, st.exit_code = "dry-run", "dry-run", EXIT_OK
             return EXIT_OK
@@ -873,6 +883,9 @@ def main(argv=None):
         released = ledger.release_in_progress()
         if released:
             log.info("released %d in_progress items left by a previous run", released)
+        if ledger.meta_get("abort_reason"):  # a new run means the operator fixed the environment
+            log.info("clearing abort from previous run: %s", ledger.meta_get("abort_reason"))
+            ledger.db.execute("DELETE FROM meta WHERE key='abort_reason'")  # autocommit connection
         stalled = consec_fail = 0
         feedback = None
         verify_cmd = cfg.get("verify", {}).get("cmd", "")
@@ -883,7 +896,11 @@ def main(argv=None):
             if chk["complete"]:
                 ok, out = run_verify(verify_cmd, workdir, env)
                 if ok:
-                    st.status, st.reason, st.exit_code = "completed", "ledger complete and verify passed", EXIT_OK
+                    nf = ledger.stats()["counts"]["failed"]
+                    if nf:
+                        st.status, st.reason, st.exit_code = "completed_with_problems", f"ledger complete and verify passed, but {nf} items failed (see problems.jsonl)", EXIT_PROBLEMS
+                    else:
+                        st.status, st.reason, st.exit_code = "completed", "ledger complete and verify passed", EXIT_OK
                     break
                 feedback = out or "verify command failed with no output"
                 log.warn("ledger complete but verify FAILED: %s", feedback[-300:])
@@ -898,16 +915,13 @@ def main(argv=None):
             rem_s = st.budget.remaining_seconds()
             if rem_s is not None:
                 timeout = max(30.0, min(timeout or rem_s, rem_s))
-            iter_cap = lim.get("max_cost_usd_per_iteration")
-            rem_c = st.budget.remaining_cost()
-            caps = [x for x in (iter_cap or None, rem_c) if x is not None]
             ctx = {"n": n, "cwd": str(workdir), "env": env, "timeout": timeout, "ledger_path": ledger_path,
-                   "iter_budget_usd": min(caps) if caps else None}
+                   "iter_budget_usd": st.budget.iter_cap()}
             prompt = build_prompt(task_text, before, cfg, backend.interface, ledger_path, feedback)
             log.info("iter %d start | ledger done=%s pending=%s in_progress=%s failed=%s blocked=%s | tokens=%s cost=$%.4f elapsed=%s",
                      n, before["counts"]["done"], before["counts"]["pending"], before["counts"]["in_progress"], before["counts"]["failed"],
                      before["counts"]["blocked"], st.budget.tokens, st.budget.u.cost_usd or 0, fmt_dur(st.budget.elapsed))
-            t0 = time.monotonic()
+            t0 = time.time()
             try:
                 res = backend.run(prompt, run_dir, ctx, st.budget)
             except (FatalError, Interrupted):
@@ -921,7 +935,7 @@ def main(argv=None):
             after = ledger.stats()
             sig_after = (after["terminal"], after["total"], after["discovery_complete"], json.dumps(after["meta"], sort_keys=True))
             progressed = sig_after != sig_before
-            rec = {"n": n, "ok": res.ok, "error": res.error, "timed_out": res.timed_out, "duration_s": round(time.monotonic() - t0, 1),
+            rec = {"n": n, "ok": res.ok, "error": res.error, "timed_out": res.timed_out, "duration_s": round(time.time() - t0, 1),
                    "tokens": res.usage.tokens(st.budget.count_cache_read), "cost_usd": res.usage.cost_usd, "estimated": res.usage.estimated,
                    "progress": progressed, "terminal_after": after["terminal"], "total_after": after["total"], "note": res.note,
                    "summary": res.summary[:200]}
@@ -930,6 +944,11 @@ def main(argv=None):
             log.info("iter %d end   | ok=%s progress=%s %s%s | +tokens=%s +cost=$%s | %s", n, res.ok, progressed, f"error={res.error} " if res.error else "",
                      f"note={res.note} " if res.note else "", rec["tokens"], f"{res.usage.cost_usd:.4f}" if res.usage.cost_usd is not None else "?",
                      res.summary[:120].replace("\n", " "))
+            abort = ledger.meta_get("abort_reason")
+            if abort:
+                ledger.release_in_progress()
+                st.status, st.reason, st.exit_code = "aborted", f"agent aborted: {abort}", EXIT_ABORTED
+                break
             if not res.ok:
                 ledger.release_in_progress()  # agent is dead (we only run one), its claims would otherwise sit until claim_timeout
             consec_fail = 0 if res.ok else consec_fail + 1
