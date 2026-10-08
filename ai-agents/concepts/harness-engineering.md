@@ -178,28 +178,9 @@
 
 ## 沙箱，權限與安全
 
+- 本章內容已拆到 [agent-security.md](agent-security.md)。
 - 憑證：沙箱內憑證數量應為零；在邊界注入（network proxy 於外送請求時加 token；vault 僅在工具執行時解密）。[Clark] [Bhat&He] [Schmid-NoCode] [Jain]
-- Brain / Hands 解耦：模型 + loop 與工具執行環境分離，沙箱壞了就重建重試，brain 壞了從 session log 恢復；hands 可放在客戶 VPC；啟動可平行，首 token 延遲 p50 降 60%，p95 降超過 90%。[Bhat&He] [L.Martin]
-- 依任務意圖建模沙箱：新聞室範例（研究員有網路無寫入工具，查核員無網路，發佈者只看過濾後內容），避免「不可信輸入」與「危險工具」同在一處；coding agent 只在 commit 的幾分鐘才有簽章金鑰。[Clark]
-- 範圍化能力與意圖式存取：每個任務產生 just-in-time 工具（例如僅限事故頻道的 Slack 讀取）；當請求與原始意圖不符（調查延遲卻要寄信）就拒絕或升級給人。控制放在邊界外、與模型無關。[Jain]
-- Auto-review：以唯讀、不可再開子 agent 的 review agent 審核升權請求，輸入含風險分類、完整 transcript 與使用者授權程度（刪掉你要求刪的檔 vs 刪掉從未提到的 .git）。用來減少 approval fatigue 而不開 full access。[Kundel]
-- 沙箱技術：OS 層 seatbelt (macOS)，bubblewrap (Linux)，自製 Windows 沙箱；隔離強度從 fork/exec，container，gVisor 到 microVM (Firecracker, Cloud Hypervisor)；fork/exec 與 container 共用核心，有核心漏洞與 noisy neighbor 風險。[Kundel] [Bhardwaj]（部分）
-- 沙箱持久化：增量快照，copy-on-write，可在別台節點還原，並支援樹狀搜尋式回溯。[Bhardwaj]（部分）
-- 核准是有範圍的執行狀態（誰，哪個 session，哪個工具，參數，期限），會過期而非無限重試。[Govindarajan]
-- 供應鏈與身分：Cross App Access (XAA) 讓 agent 沿用 SSO/IdP。[Clark]
-- 調查數據：有寫入權限的 agent 比例從 52% 升到 89%（僅取自直播片段，未深讀，引用前請回原片確認）。[WF26]
-- Credential-injecting proxy：在外送請求的 header 動態注入 token，模型只執行程式、永遠看不到密鑰，被 prompt injection 也無從洩漏 (Managed Agents)。[Leo]
-- Swiss cheese 多層防禦：model alignment、harness（權限、prompt、對 bash 指令做 AST parsing）、sandbox（網路與檔案系統隔離）；重點是阻止外洩，sandbox 放在託管環境而不是滿是 secrets 的個人電腦。[Shihipar]
-- 不要讓 secrets 以檔案形式存在：權限不足的 agent 會在檔案系統裡找更高權限的 token；RL 讓模型更會找漏洞，安全必須來自外圍基礎設施。[LoopsDebate]
-- 隔離層級：開發任務用 VM 而不只是 container（container 不是牢靠邊界，K8s 上還有 noisy neighbor）；每個 cloud agent 一台獨立 VM，連 DB 與服務一起，避免 worktree 共用 DB / cache 的副作用。對照：Pocock 用 git worktree + Docker，Solmaz 用每任務一個 K8s pod。[Bichard] [Zakariasson] [Pocock] [Solmaz]
-- 不可逆判準：「這件事能不能不尷尬地復原？」不能就不做，留註記交還給人。實作：email 只准草稿、AI 專屬金鑰保留稽核軌跡、開發工具唯讀、跑在獨立 VPS；留意 lethal trifecta（不可信輸入 + 網路 + 機密資料同在）。[Parsons]
-- 依角色設 sandbox：review 與資安分析類 subagent 一律 read-only，要產文件的才給寫入。Guardian approvals（Codex 實驗功能）讓 subagent 判斷特權操作要不要叫人，以降低核准疲勞、取代 YOLO mode，概念同 [Kundel] 的 auto-review（講者現場示範沒成功）。[Codex-MC]
-- 用 hook 禁止 agent 修改最敏感的區域（加密、認證）；為特定 invariant 建 security sentinel automation，只在改到相關檔案的 PR 上跑。[Zakariasson]
-- Containment 優先於 human-in-the-loop：使用者約核准 93% 的 permission prompt，審核疲勞讓人工把關不可靠。Claude Code 用 OS 級 sandbox（Seatbelt / bubblewrap）預設允許讀取、寫入限於 workspace、網路預設禁止，沙箱內不再打斷使用者，permission prompt 減少 84%。[Anthropic-Contain]
-- 隔離強度配合使用者的監督能力：claude.ai 用 gVisor 臨時容器；Claude Code 用 OS sandbox 加人工核准（開發者看得懂 bash）；Cowork 面向非技術使用者，用本機 VM 當常開的硬邊界，憑證留在 host keychain，VM 只拿 per-session、可撤銷的縮權 token。[Anthropic-Contain]
-- 事故教訓是「自己寫的元件最脆弱」：trust dialog 之前就執行了 project hook、allowlist 內的 api.anthropic.com 被拿來外洩資料，而 hypervisor、seccomp、gVisor 都守住了。對應做法：project-open、config-load、localhost listener 一律視同外部請求；egress allowlist 當成 capability grant（VM 內的 MITM proxy 只放行帶本 VM session token 的請求）；symlink 先解析再驗證路徑；掛載分 read-only、read-write、read-write-no-delete。[Anthropic-Contain]
-- Agent loop 放在 VM 外、只把程式碼執行放進 VM（VM 起不來時 agent 仍能回應除錯，同 [Bhat&He] 的 brain / hands 分離）；tool 回傳值進入 context 前由小而快的 classifier 檢查。Auto mode 的 classifier 約擋下 83% 過度積極行為、誤擋約 0.4% 良性指令，只能當縱深防禦的一層。[Anthropic-Contain]
-- 瀏覽器本身就是 sandbox：檔案用 File System Access API（目前僅 Chrome）、網路用 CSP + `<iframe sandbox>`、程式碼執行放 Web Worker 裡的 WebAssembly，不需要數 GB 的本機容器。[Willison]
+- Containment 優先於 human-in-the-loop：使用者約核准 93% 的 permission prompt，審核疲勞讓人工把關不可靠。[Anthropic-Contain]
 
 ## 狀態，可靠性與可觀測
 
@@ -253,20 +234,9 @@
 
 ## 持續改進與評估 (evals)
 
-- Trace mining：讓 agent 讀其他 agent 的 trace，找情緒不佳的互動，壓縮後是否變笨，反事實（換模型會如何）；大型 trace 當外部物件查詢；dense feedback 優於單純通過/失敗。[Trivedy]
-- 每次失敗都是 harness bug：修 harness 而不是修產出；每週一天 (garbage collection day) 把重複出現的 slop 轉為文件，lint 或 review agent。[Nisi] [Lopopolo]
-- 可驗證的持續學習：失敗轉成可重播環境，修補前後有量測差異，並對舊環境做回歸測試；修補層級 (model, harness, memory) 取最小的耐久變更。[Feizi]
-- Skill eval 實作：JSON 測試案例（prompt，should_trigger，預期檢查） + 簡單 runner；多以 regex 斷言，複雜時用 LLM judge；隔離工作區，多次重複，測結果不測路徑，跨 harness，每次修改都跑，保留 eval 即使 skill 退役。[Schmid-Evals]
-- 自動優化：GEPA 之類最佳化器直接調整被標記的 prompt。[Bhargava] [Feizi]
-- 日常除錯：最有效的是親自讀 trace；其次把 transcript 丟給另一個 agent 找問題；觀察 evaluator 判斷與人類分歧處再調 prompt。[Prabaker]
-- 現有 benchmark 缺乏對維護性的懲罰（SWE-Marathon，DeepSWE，Frontier Code 為較新嘗試）。[Horthy-SF]
-- Eval flywheel：production 與離線研究環境跑逐位元組相同的 agent、同一種 trace 格式；每個 production 的失敗（與成功）都轉成離線 eval task；agent 設定寫成 YAML 以便大量產生變體並行測；評分本身最花時間，也要驗證評分的穩健性。[Aysola]
-- Benchmark 實戰（Cline，Terminal Bench 89 題從約 43% 起步 (@14:01)）：每題隔離環境、全部平行跑；派 agent 讀每個失敗 run 的 trace 標註原因；改進分三區：明顯缺陷（crash、被 rate limit）要修、針對模型家族的細調最關鍵、過擬合衝分是危險區。進步多半來自容器資源、timeout、thinking 行為與模型家族專屬 prompt，而不是換模型；hill climbing 與 vibe check 兩個都要。[Khan]
-- Eval calcification：系統會變，靜態 benchmark 與手工資料集遲早失效。改以意圖 / 終態定義 eval、從 trace 自動長出測試集；約 80% 穩定部分 + 20% 持續變動由 agent 維護（比例為舉例）；做成 always-on 的線上評測。[Koc]
-- 讓 agent 讀過去的 session，建議該新增哪些 automation、subagent 或 rule。[Codex-MC] [Zakariasson]
-- 新模型推出時先拿掉既有 skills / markdown，用裸模型重新驗證：不同模型偏好不同（例如對全大寫強調的反應相反）。[LoopsDebate]
-- 把一次表現極佳的 "golden session" 交給 agent 拆成可重用的 workflow。[Weitekamp]
-- Harness 變更要當成模型變更來發布（Claude Code 品質事件）：三個 harness 層變更（預設 effort、清除舊 thinking 的 bug、system prompt 加字數限制）疊加後看起來像模型退化，API 與推論層其實沒動；code review、單元與 e2e 測試、dogfooding、原有 eval 都沒抓到。改進：每次 system prompt 變更跑跨模型的廣泛 eval 並逐行 ablation（這樣才看到 3% 的下降）、與特定模型相關的調整綁定該模型、soak period 加漸進 rollout、內部人員使用與公開版相同的 build。[Anthropic-PM]
+- 本章內容已拆到 [agent-evals.md](agent-evals.md)。
+- 每次失敗都是 harness bug：修 harness 而不是修產出。[Nisi] [Lopopolo]
+- Harness 變更要當成模型變更來發布（Claude Code 品質事件）。[Anthropic-PM]
 
 ## 反例，風險與爭議點
 
@@ -331,12 +301,12 @@
 0. 先確認需要的是 agent 而不是 workflow（四項檢查），並設定每任務預算。[Zhang-EA]
 1. 先寫最小 loop + 工具登錄 + 停止條件 + 迭代上限 + trace 紀錄（事件日誌）。[Kumar] [Templestein] [Horthy-12F]
 2. 加入確定性 verify 關卡與防作弊（讀 trace，雜湊證據），掛在 hook 上；大任務先寫 validation contract 再實作。[Kumar] [Nisi] [Sheikh] [Alvoeiro]
-3. 把持久狀態與憑證放在 harness 側，沙箱內憑證為零；設 deadline 與單一寫入者。[Clark] [Govindarajan]
+3. 把持久狀態與憑證放在 harness 側，沙箱內憑證為零（見 [agent-security.md](agent-security.md)）；設 deadline 與單一寫入者。[Clark] [Govindarajan]
 4. Context：頭尾保留 + 可檢索 memory store，延遲載入工具，大資料交給子 agent；工作量控制在約 40% / 100k 以內。[Delucia] [Kundel] [Horthy-NV] [Pocock]
 5. Skills 只放 "gotchas"，配 eval 與 ablation；每次換模型重跑。[Nisi] [Schmid-Evals]
 6. 加獨立 evaluator（有 rubric 與真實操作工具），長任務才需要 planner 與 sprint contract。[Prabaker]
 7. 記憶：先讓模型自己寫檔案；有跨 session 價值再加 recall 排序與離線整理，並量測 recall policy。[L.Martin] [Druga]
-8. 建立 trace 探勘與回歸測試的改進迴圈；每個失敗當成 harness bug。[Trivedy] [Feizi] [Nisi]
+8. 建立 trace 探勘與回歸測試的改進迴圈（見 [agent-evals.md](agent-evals.md)）；每個失敗當成 harness bug。[Trivedy] [Feizi] [Nisi]
 9. 定期用 eval 找可刪元件。[Bhat&He] [Schmid-NoCode]
 
 ---
