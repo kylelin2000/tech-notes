@@ -1,10 +1,10 @@
 # tools
 
-撈資料、整理資料的程式都放這裡；整理出來的筆記直接放進對應的主題資料夾（例如 `ai-agents/concepts/`）。除了 agent-runner 需要 Python 3.11+，其餘只用 Python 標準函式庫；PDF 轉文字需要 `pdftotext`。
+撈資料、整理資料的程式都放這裡；整理出來的筆記直接放進對應的主題資料夾（例如 `ai-agents/concepts/`）。除了 agent-runner 需要 Python 3.11+，其餘只用 Python 標準函式庫；PDF 轉文字需要 `pdftotext`，YouTube 字幕需要 `yt-dlp`。
 
 ## 整理流程
 
-1. **抓取**（不呼叫 LLM）：`python3 tools/sources/<主題>.py` 把來源抓一次存進 `tools/.cache/<主題>/`（不進 git），檔名就是筆記裡的 `[簡稱]`。
+1. **抓取**（不呼叫 LLM）：`python3 tools/sources/<主題>.py` 把來源抓一次存進 `tools/.cache/<主題>/`（不進 git），檔名就是筆記裡的 `[簡稱]`；演講用 `python3 tools/youtube.py <網址>` 抓逐字稿。
 2. **整理**：在互動式 Claude Code session 讀快取寫筆記；來源多時用 subagent 逐篇摘要，再挑選、去重後合併。
 3. **寫進筆記**：放進對應主題資料夾，來源表第一欄用和快取檔名相同的 `[簡稱]`。
 4. **檢查**：`python3 tools/check.py <主題>`。
@@ -17,6 +17,7 @@
 |---|---|
 | [fetch.py](fetch.py) | 抓取的共用邏輯：抓一次存進快取、429 就整批停下、403／CAPTCHA 標記 blocked 不繞過 |
 | [sources/](sources/) | 各主題的來源表，每個主題一支，只寫 `SOURCES` 和 `run()`；目前有 [ai-agents.py](sources/ai-agents.py) |
+| [youtube.py](youtube.py) | 抓 YouTube 英文字幕轉成附 `[mm:ss]` 的逐字稿，存進 `tools/.cache/youtube/`；可從筆記某一節讀連結，也能產生 agent-runner 的 seed |
 | [check.py](check.py) | 檢查每個 `[簡稱]` 都在該篇的來源表裡、筆記之間的連結與錨點都對得到。`python3 tools/check.py` 檢查整個 repo，加資料夾名稱只檢查該主題 |
 | [agent-runner/](agent-runner/README.md) | 個人 PoC：讓 claude / codex / opencode CLI 或 OpenAI 相容 API 無人值守跑長時間資料整理任務（SQLite 帳本、預算／逾時／停滯護欄、完整 log），不保證穩定 |
 
@@ -30,6 +31,6 @@
 - 各來源：
   - arXiv API：間隔 3 秒仍會 429，約 15 分鐘後恢復。
   - Semantic Scholar（未帶 key）：共用額度，幾乎一直 429；要用就申請免費 key。
-  - YouTube 字幕（yt-dlp）：抓幾支就 429，重抓同一支更快被擋。用 `--sleep-subtitles 10`、每支間隔約 30 秒；每支只抓一條字幕軌：先抓 info.json 挑軌，再用 `--load-info-json` 只下載那一條（實測連抓 21 支、間隔約 45 秒，0 次 429）。
+  - YouTube 字幕（yt-dlp）：抓幾支就 429，重抓同一支更快被擋。用 `--sleep-subtitles 10`、每支間隔約 30 秒；每支只抓一條字幕軌：先抓 info.json 挑軌，再用 `--load-info-json` 只下載那一條（實測連抓 21 支、間隔約 45 秒，0 次 429）。[youtube.py](youtube.py) 已照這個做法實作。
   - OpenReview：審稿回覆回 403 bot challenge，視為拿不到。
   - 目前沒問題：`gh` 登入後的 GitHub API、HN Algolia API、Anthropic Engineering、simonwillison.net（間隔 3 秒）。
