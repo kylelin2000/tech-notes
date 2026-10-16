@@ -128,10 +128,10 @@ python3 tests/mock_api.py 8801 8802 &      # 另開終端也可
 cd examples/talks
 # 從筆記「## 待讀清單」取影片；這份清單已在 2026-10-07 讀完清空，要用先補上連結，或直接在指令後面給影片網址
 python3 ../../../youtube.py --from-note ../../../../ai-agents/concepts/harness-engineering.md --out evidence --seed seed.jsonl
-python3 ../../run.py --config config.toml
+python3 ../../run.py --config config.toml   # 需要 Python 3.11+（tomllib）
 ```
 
-`LIMIT=N` 可只抓前 N 支；被 YouTube 擋就停下，之後重跑會從沒抓到的那支接續。學術論文來源（Semantic Scholar + arXiv）試過後拿掉：未帶 key 的 S2 API 幾乎一直 429，且重點是實務做法而非論文。
+`LIMIT=N` 可限制本次最多抓 N 支；被 YouTube 限流就停下，之後重跑會從沒抓到的那支接續。學術論文來源（Semantic Scholar + arXiv）試過後拿掉：未帶 key 的 S2 API 幾乎一直 429，且重點是實務做法而非論文。
 
 ## 爬取的禮貌與合規
 

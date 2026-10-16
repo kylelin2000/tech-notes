@@ -3,32 +3,46 @@
 
 python3 tools/youtube.py URL或影片ID ...                       # 存進 tools/.cache/youtube/
 python3 tools/youtube.py --from-note ai-agents/concepts/harness-engineering.md   # 讀筆記「## 待讀清單」裡的 YouTube 連結
-python3 tools/youtube.py --out evidence --seed seed.jsonl ...  # 給 agent-runner：另外寫 seed（路徑相對於 seed 檔）
-LIMIT=N 只抓前 N 支。需要 yt-dlp。
+python3 tools/youtube.py --out evidence --seed seed.jsonl ...  # 給 agent-runner：另外寫 seed（路徑相對於 seed 檔，要搭配 --out）
+LIMIT=N 本次最多抓 N 支（已抓過、跳過的不算）。需要 yt-dlp。
 
 每支輸出 <id>.txt（逐字稿）、<id>.meta.json（標題、頻道、長度、章節、字幕檔名）、<id>.<lang>.vtt（原始字幕）。
 - 抓一次就存檔，<id>.txt 已存在的跳過，可續跑。
-- 沒有英文字幕或 yt-dlp 失敗的記進 status.json，之後跳過；指令後面直接給網址／ID 才重抓。
+- 結果記進 status.json，規則同 tools/fetch.py：沒有英文字幕（no-en-subs）、需要登入（年齡限制、私人影片，blocked）之後跳過，
+  其他失敗（error，例如斷網）下次重試；指令後面直接給網址／ID 一律重抓。
 - YouTube 字幕端點很容易 429：每支只發一次字幕請求（先抓 info.json 挑軌，再用 --load-info-json 只下載那一條），每支間隔約 45 秒。
-- 被擋（sign-in／bot check／429）就整批停下（exit 2），晚點重跑接續；不用 cookies、不繞過。
+- 被限流（bot check／429）就整批停下（exit 2），晚點重跑接續；不用 cookies、不繞過。
 """
 import argparse, glob, json, os, re, shutil, subprocess, sys, time
 from pathlib import Path
 
 CACHE = Path(__file__).resolve().parent / ".cache" / "youtube"
 SPACING = 30  # 秒，加上 --sleep-subtitles 10，每支約 45 秒
-BLOCK = re.compile(r"Sign in|not a bot|HTTP Error 429|Too Many Requests")
-VID = re.compile(r"(?:v=|youtu\.be/|/live/|/shorts/|/embed/|^)([\w-]{11})(?![\w-])")
+RATE = re.compile(r"not a bot|HTTP Error 429|Too Many Requests")  # 限流：整批停
+LOGIN = re.compile(r"Sign in")  # 年齡限制、私人影片（bot check 也含 Sign in，所以先比 RATE）
+VID = re.compile(r"(?:v=|youtu\.be/|/live/|/shorts/|/embed/|^)(?!videoseries)([\w-]{11})(?![\w-])")
 YT = re.compile(r"^https?://(?:(?:www|m)\.)?(?:youtube\.com|youtu\.be)/")
+SKIP = ("no-en-subs", "blocked")  # status.json 裡這些開頭的是永久狀態，之後跳過
 
 
-class Blocked(Exception):
+class RateLimited(Exception):
     pass
+
+
+def refused(stderr, v, leftover=None):
+    """被限流就丟 RateLimited；需要登入回傳 blocked 原因（標記後跳過，不繞過）；都不是回傳 None。被拒時刪掉 leftover。"""
+    rate, login = RATE.search(stderr), LOGIN.search(stderr)
+    if (rate or login) and leftover:
+        leftover.unlink(missing_ok=True)
+    if rate:
+        raise RateLimited(v)
+    if login:
+        return "blocked: " + stderr.strip()[-200:]
 
 
 def from_note(path, section):
     """筆記某一節裡的 YouTube 連結：回傳 [(id, hint, priority)]。### 標題當優先度，連結後面的文字當 hint。"""
-    m = re.search(rf"^## {re.escape(section)}\n(.*?)(?=^## |\Z)", Path(path).read_text(encoding="utf-8"), re.S | re.M)
+    m = re.search(rf"^## {re.escape(section)}[^\n]*\n(.*?)(?=^## |\Z)", Path(path).read_text(encoding="utf-8"), re.S | re.M)
     if not m:
         sys.exit(f"{path} 找不到「## {section}」")
     items, prio = [], ""
@@ -37,6 +51,9 @@ def from_note(path, section):
             prio = re.sub(r"[（(].*", "", ln[4:]).strip()
             continue
         links = [(lk, VID.search(lk.group(1))) for lk in re.finditer(r"\]\((\S+?)\)", ln) if YT.match(lk.group(1))]
+        for lk, v in links:
+            if not v:
+                print("WARN 看不出影片 ID，略過（播放清單、頻道不支援）：", lk.group(1), file=sys.stderr)
         links = [(lk, v) for lk, v in links if v]
         if links:
             hint = ln[links[-1][0].end():].lstrip("：").strip()
@@ -72,13 +89,13 @@ def vtts(v, out):
 
 
 def fetch(v, out):
-    """抓一支；成功回傳 None，沒有英文字幕或 yt-dlp 失敗回傳原因（記進 status.json）。被擋就丟 Blocked。"""
+    """抓一支；成功回傳 None，否則回傳原因（記進 status.json）。被限流就丟 RateLimited。"""
     yt = ["yt-dlp", "--skip-download", "-o", str(out / "%(id)s.%(ext)s")]
     info_path = out / f"{v}.info.json"
     r = subprocess.run(yt + ["--write-info-json", "https://www.youtube.com/watch?v=" + v], capture_output=True, text=True)  # 只抓 metadata
-    if BLOCK.search(r.stderr):
-        info_path.unlink(missing_ok=True)
-        raise Blocked(v)
+    err = refused(r.stderr, v, info_path)
+    if err:
+        return err
     try:
         info = json.loads(info_path.read_text(encoding="utf-8"))
     except (OSError, ValueError):  # 沒寫出來，或寫到一半（JSONDecodeError）
@@ -99,17 +116,19 @@ def fetch(v, out):
     r = subprocess.run(yt + ["--load-info-json", str(info_path), flag, "--sub-langs", lang,
                              "--sub-format", "vtt", "--sleep-subtitles", "10"], capture_output=True, text=True)
     info_path.unlink()
-    if BLOCK.search(r.stderr):
-        raise Blocked(v)
+    err = refused(r.stderr, v)
+    if err:
+        return err
     vtt = next(iter(vtts(v, out)), None)
     if not vtt:
         return "error: 字幕沒下載到 " + r.stderr.strip()[-200:]
-    (out / f"{v}.txt").write_text(vtt2txt(vtt), encoding="utf-8")
     meta = {"id": v, "title": info.get("title"), "channel": info.get("channel") or info.get("uploader"),
             "upload_date": info.get("upload_date"), "duration": info.get("duration"),
             "chapters": [{"title": c["title"], "start_time": c["start_time"]} for c in info.get("chapters") or []],
             "description": (info.get("description") or "")[:500], "subtitle": os.path.basename(vtt)}
+    # 先寫 meta 再寫 .txt：.txt 存在才算完成，中斷時不會留下有 .txt 沒 meta 的半成品
     (out / f"{v}.meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=1), encoding="utf-8")
+    (out / f"{v}.txt").write_text(vtt2txt(vtt), encoding="utf-8")
 
 
 def write_seed(items, out, seed):
@@ -119,14 +138,23 @@ def write_seed(items, out, seed):
             return os.path.relpath(p, seed.resolve().parent).replace(os.sep, "/")
         except ValueError:
             return Path(p).resolve().as_posix()
-    with open(seed, "w", encoding="utf-8") as o:
+    tmp = seed.with_name(seed.name + ".tmp")  # 寫完再換掉，出錯也不會留下截斷的 seed
+    with open(tmp, "w", encoding="utf-8") as o:
         for v, hint, prio in items:
             txt, meta = out / f"{v}.txt", out / f"{v}.meta.json"
             if not txt.exists() or not meta.exists():
                 continue
-            o.write(json.dumps({"key": "https://www.youtube.com/watch?v=" + v,
-                                "evidence": rel(out / json.loads(meta.read_text(encoding="utf-8"))["subtitle"]),
+            try:
+                sub = json.loads(meta.read_text(encoding="utf-8")).get("subtitle")
+            except ValueError:
+                sub = None
+            vtt = out / sub if sub else next(iter(vtts(v, out)), None)  # 舊版 prep.sh 的 meta 沒有 subtitle
+            if not vtt:
+                print("WARN", v, "找不到 .vtt，不放進 seed", file=sys.stderr)
+                continue
+            o.write(json.dumps({"key": "https://www.youtube.com/watch?v=" + v, "evidence": rel(vtt),
                                 "text": rel(txt), "meta": rel(meta), "hint": hint, "priority": prio}, ensure_ascii=False) + "\n")
+    os.replace(tmp, seed)
 
 
 def main():
@@ -134,9 +162,12 @@ def main():
     ap.add_argument("videos", nargs="*", help="影片網址或 11 碼 ID")
     ap.add_argument("--from-note", help="從這篇筆記的某一節讀 YouTube 連結")
     ap.add_argument("--section", default="待讀清單", help="--from-note 讀哪一節（預設：待讀清單）")
-    ap.add_argument("--out", type=Path, default=CACHE, help=f"輸出資料夾（預設：{CACHE}）")
-    ap.add_argument("--seed", type=Path, help="另外寫 agent-runner 的 seed.jsonl")
+    ap.add_argument("--out", type=Path, help=f"輸出資料夾（預設：{CACHE}）")
+    ap.add_argument("--seed", type=Path, help="另外寫 agent-runner 的 seed.jsonl（要搭配 --out）")
     a = ap.parse_args()
+    if a.seed and not a.out:
+        ap.error("--seed 要搭配 --out，讓逐字稿落在 agent-runner 的工作目錄內（例如 --out evidence）")
+    a.out = a.out or CACHE
 
     items = from_note(a.from_note, a.section) if a.from_note else []
     explicit = set()
@@ -151,7 +182,8 @@ def main():
     uniq = {}
     for it in items:  # 留第一次出現的，筆記裡的 hint／priority 不會被指令列的空值蓋掉
         uniq.setdefault(it[0], it)
-    items = list(uniq.values())[:int(os.environ.get("LIMIT") or len(uniq))]
+    items = list(uniq.values())
+    limit = int(os.environ.get("LIMIT") or 0)
     print(len(items), "支：", " ".join(i[0] for i in items))
 
     if not shutil.which("yt-dlp"):
@@ -159,14 +191,16 @@ def main():
     a.out.mkdir(parents=True, exist_ok=True)
     sf = a.out / "status.json"
     status = json.loads(sf.read_text(encoding="utf-8")) if sf.exists() else {}
-    requested, ok, failed = False, 0, 0
+    requested, ok, failed = 0, 0, 0
     try:
         for v, _, _ in items:
-            if (a.out / f"{v}.txt").exists() or (v in status and v not in explicit):
+            if (a.out / f"{v}.txt").exists() or (v not in explicit and status.get(v, "").startswith(SKIP)):
                 continue
+            if limit and requested >= limit:
+                break
             if requested:
                 time.sleep(SPACING)
-            requested = True  # 失敗也發過請求，下一支照樣要等
+            requested += 1  # 失敗也發過請求，下一支照樣要等
             err = fetch(v, a.out)
             if err:
                 print("WARN", v, err)
@@ -175,10 +209,10 @@ def main():
                 status.pop(v, None)
                 ok += 1
             sf.write_text(json.dumps(status, ensure_ascii=False, indent=1), encoding="utf-8")  # 每支存一次，中斷也不會丟
-    except Blocked as e:
-        print(f"STOP at {e}：YouTube 擋下（sign-in／bot check／429），不繞過，晚點重跑接續。", file=sys.stderr)
+    except RateLimited as e:
+        print(f"STOP at {e}：YouTube 限流（bot check／429），不繞過，晚點重跑接續。", file=sys.stderr)
         sys.exit(2)
-    finally:  # 被擋或 Ctrl-C 也照樣把已抓到的寫進 seed
+    finally:  # 被限流或 Ctrl-C 也照樣把已抓到的寫進 seed
         print(f"本次抓到 {ok} 支，失敗 {failed} 支（見 {sf}）" if failed else f"本次抓到 {ok} 支")
         if a.seed:
             write_seed(items, a.out, a.seed)

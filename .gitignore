@@ -3,8 +3,6 @@ __pycache__/
 
 # 抓下來的原始資料
 tools/.cache/
-# 舊位置；tools/sources/ai-agents.py 第一次跑會搬到 tools/.cache/ai-agents/
-ai-agents/.cache/
 
 # agent-runner 執行時產生的檔案
 tools/agent-runner/**/config.toml

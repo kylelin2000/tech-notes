@@ -121,8 +121,4 @@ def run(sid, url):
 
 
 if __name__ == "__main__":
-    old = Path(__file__).resolve().parents[2] / "ai-agents" / ".cache"  # 搬到 tools/ 之前的位置，搬過來免得重抓
-    if old.is_dir() and not CACHE.exists():
-        CACHE.parent.mkdir(parents=True, exist_ok=True)
-        old.rename(CACHE)
     fetch.main(SOURCES, run, CACHE)
