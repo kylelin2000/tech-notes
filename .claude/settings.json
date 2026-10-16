@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "P=python3; $P -c \"\" 2>/dev/null || P=python; $P \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard_identity.py\" || echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"ask\",\"permissionDecisionReason\":\"guard_identity.py could not run (no Python?); personal-info check skipped, confirm manually.\"}}'",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

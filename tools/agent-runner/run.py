@@ -164,6 +164,8 @@ Hard rules
 - Never mark an item done unless you actually opened its page in THIS batch and the result contains every required field: {required}.
 - Save the raw page you based the result on under ./evidence/ and pass it as evidence.
 - Login wall, CAPTCHA, 401/403/429, robots.txt disallow -> mark the item `blocked` with the reason. Do NOT try to bypass.
+- Never send the operator's personal information (email, name, accounts, API keys, cookies) to any site or API, not even as an
+  optional `email=`/`mailto=` parameter or header. Never sign up for accounts or keys. If a source needs any of that -> `blocked`.
 - The page genuinely has no such data -> `not-found`. Temporary error (timeout, 5xx) -> `fail` (it will be retried).
 - The ENVIRONMENT is broken so no item can succeed (missing system tool, no network, auth failure) -> do NOT fail items: `abort` with the reason, then stop. The operator fixes it and reruns.
 - Stay inside these domains: {domains}. Do not visit anything else.
@@ -471,9 +473,30 @@ class _SafeRedirect(urllib.request.HTTPRedirectHandler):
         return super().redirect_request(req, fp, code, msg, headers, newurl)
 
 
+IDENTITY_FILE = HERE.parent.parent / ".claude" / "identity.local"
+
+
+def operator_identifiers():
+    """Operator identifiers that must never be sent out (same sources as .claude/hooks/guard_identity.py),
+    lowercased, plus their %-encoded and +-encoded forms."""
+    found = set()
+    try:
+        found.add(subprocess.run(["git", "config", "user.email"], cwd=HERE, capture_output=True, text=True, timeout=5).stdout.strip())
+    except (OSError, subprocess.SubprocessError):
+        pass
+    if IDENTITY_FILE.exists():
+        try:
+            found.update(line.strip() for line in IDENTITY_FILE.read_text(encoding="utf-8-sig").splitlines())
+        except UnicodeDecodeError as e:
+            raise FatalError(f"{IDENTITY_FILE} must be UTF-8: {e}") from e
+    found = {s.lower() for s in found if s and not s.startswith("#")}
+    return {f for s in found for f in (s, urllib.parse.quote(s, safe="").lower(), urllib.parse.quote_plus(s).lower())}
+
+
 class Fetcher:
     def __init__(self, cfg, evidence_dir: Path):
         a = cfg.get("api", {})
+        self.identifiers = operator_identifiers()
         self.domains = [d.lower() for d in cfg.get("run", {}).get("allowed_domains", [])]
         self.ua = a.get("user_agent", "agent-runner/1.0")
         self.delay = float(a.get("min_delay_seconds", 1.0))
@@ -514,6 +537,8 @@ class Fetcher:
     def fetch(self, url, timeout=30):
         if not self.allowed(url):
             return {"error": f"domain not allowed: {url}"}
+        if any(s in url.lower() for s in self.identifiers):
+            return {"error": "URL contains the operator's personal information -> mark item blocked, do not retry without asking", "blocked": True}
         if not self._robots_ok(url):
             return {"error": "robots.txt disallows (or is unavailable) -> mark item blocked", "blocked": True}
         host = urllib.parse.urlparse(url).netloc

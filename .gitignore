@@ -14,3 +14,7 @@ tools/agent-runner/**/evidence/
 tools/agent-runner/**/seed.jsonl
 tools/agent-runner/**/*.log
 tools/agent-runner/**/*.out
+
+# 個人識別資訊清單（給 .claude/hooks/guard_identity.py）、個人 Claude Code 設定
+.claude/identity.local
+.claude/settings.local.json

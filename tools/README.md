@@ -30,7 +30,7 @@
 - **被 429 就停**：整批停下、晚點重跑接續；不要密集重試，不用 cookies，不繞過驗證。
 - 各來源：
   - arXiv API：間隔 3 秒仍會 429，約 15 分鐘後恢復。
-  - Semantic Scholar（未帶 key）：共用額度，幾乎一直 429；要用就申請免費 key。
+  - Semantic Scholar（未帶 key）：共用額度，幾乎一直 429。被 429 就標記為拿不到；要不要申請 key 由我決定，agent 不自己申請。
   - YouTube 字幕（yt-dlp）：抓幾支就 429，重抓同一支更快被擋。用 `--sleep-subtitles 10`、每支間隔約 30 秒；每支只抓一條字幕軌：先抓 info.json 挑軌，再用 `--load-info-json` 只下載那一條（實測連抓 21 支、間隔約 45 秒，0 次 429）。[youtube.py](youtube.py) 已照這個做法實作，結果記進 `status.json`：沒有英文字幕、需要登入（年齡限制、私人影片）的之後不重抓，其他失敗（例如斷網）下次重試；指令後面直接給網址一律重抓。
   - OpenReview：審稿回覆回 403 bot challenge，視為拿不到。
   - 目前沒問題：`gh` 登入後的 GitHub API、HN Algolia API、Anthropic Engineering、simonwillison.net（間隔 3 秒）。

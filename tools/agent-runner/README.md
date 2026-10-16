@@ -87,8 +87,10 @@ Exit code：`0` 完成｜`1` 錯誤｜`2` 達到上限｜`3` 停滯｜`4` 連續
 - **codex**：`codex exec --json --full-auto --skip-git-repo-check`。它預設的 sandbox 會擋網路，需要在你的 Codex 設定中開啟，或用 `[codex].cmd` 覆寫整條指令。
 - **opencode**：`opencode run --format json`。用量多半解析不到，會走估算；請以時間／批次數／供應商端上限為主。
 - **custom**：`[custom].cmd = [...]`，可用 `{prompt} {prompt_file} {max_turns} {iter_budget_usd} {model}`，`prompt_via = "arg" | "stdin"`。
-- **api**：內建的 tool loop，打 `/chat/completions`（OpenAI 相容，LiteLLM、OpenRouter 等也可）。內建 `fetch`（網域白名單、遵守 robots.txt、每站最小間隔、重新導向不得離開白名單、原始頁面存證）與全部帳本操作。**只處理靜態 HTML／JSON**；需要執行 JS 的網站請改用有瀏覽器能力的 CLI，或自己擴充 `Fetcher`。
+- **api**：內建的 tool loop，打 `/chat/completions`（OpenAI 相容，LiteLLM、OpenRouter 等也可）。內建 `fetch`（網域白名單、遵守 robots.txt、每站最小間隔、重新導向不得離開白名單、原始頁面存證）與全部帳本操作。`fetch` 的網址含操作者識別資訊（`git config user.email` 與 `.claude/identity.local`，含 URL 編碼形式）時直接回 blocked、不送出。**只處理靜態 HTML／JSON**；需要執行 JS 的網站請改用有瀏覽器能力的 CLI，或自己擴充 `Fetcher`。
 
+> **個人資訊保護只有 api 後端有程式層級的檢查。** codex、opencode、custom 自己發網路請求，不經過 `Fetcher`，也不經過 repo 的 Claude Code hook（`.claude/hooks/guard_identity.py`），只靠 prompt 裡「不送出個人資訊」那條規則；它們有 shell，讀得到 `git config user.email`。claude 後端是否套用該 hook 取決於執行目錄，未驗證。
+>
 > 各 CLI 的旗標會隨版本變動。我是依官方文件與社群資料設定預設值，若你的版本不同，先 `--dry-run` 看指令，必要時用 `[<backend>].cmd` 覆寫。
 
 ## 檔案
