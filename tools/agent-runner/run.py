@@ -164,6 +164,8 @@ Hard rules
 - Never mark an item done unless you actually opened its page in THIS batch and the result contains every required field: {required}.
 - Save the raw page you based the result on under ./evidence/ and pass it as evidence.
 - Login wall, CAPTCHA, 401/403/429, robots.txt disallow -> mark the item `blocked` with the reason. Do NOT try to bypass.
+- Never send the operator's personal information (email, name, accounts, API keys, cookies) to any site or API, not even as an
+  optional `email=`/`mailto=` parameter or header. Never sign up for accounts or keys. If a source needs any of that -> `blocked`.
 - The page genuinely has no such data -> `not-found`. Temporary error (timeout, 5xx) -> `fail` (it will be retried).
 - The ENVIRONMENT is broken so no item can succeed (missing system tool, no network, auth failure) -> do NOT fail items: `abort` with the reason, then stop. The operator fixes it and reruns.
 - Stay inside these domains: {domains}. Do not visit anything else.

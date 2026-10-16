@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "P=python3; $P -c \"\" 2>/dev/null || P=python; $P \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard_identity.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
