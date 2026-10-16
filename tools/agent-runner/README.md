@@ -2,7 +2,7 @@
 
 > **狀態：個人 PoC / 實驗（2026-10-06）**
 > 起因：想讓 AI agent 無人值守跑長時間的「窮舉並整理資料」工作，向 AI 詢問後得到的 draft，作為起點自行試用。
-> 驗證程度：claude 後端已實跑（2026-10-07，Claude Code 2.1.292 + Sonnet）：[examples/harness-research](examples/harness-research/) 三個來源共 28 項全數完成，成本由 CLI 回報、非估算。codex / opencode / api 後端仍只用假 agent（`tests/fake_agent.py`）與 mock API（`tests/mock_api.py`）測過，旗標請先用 `--dry-run` 確認。
+> 驗證程度：claude 後端已實跑（2026-10-07，Claude Code 2.1.292 + Sonnet）：研究 agent harness 的三個來源共 28 項全數完成（見[實跑範例](#實跑範例examplestalks)），成本由 CLI 回報、非估算。codex / opencode / api 後端仍只用假 agent（`tests/fake_agent.py`）與 mock API（`tests/mock_api.py`）測過，旗標請先用 `--dry-run` 確認。
 > 不是可上線的工具，之後可能改動或捨棄。
 
 讓 claude / codex / opencode CLI、任意自訂指令，或直接打 OpenAI 相容 API，在**無人值守**下跑幾個小時的「窮舉並整理資料」工作。
@@ -100,6 +100,7 @@ config.example.toml    設定範例（所有限制都在 [limits]）
 task.example.md        任務規格範本
 tests/fake_agent.py    不需 API 的假 agent，用來測 runner
 tests/mock_api.py      假網站 + 假 LLM 端點，用來測 API 後端
+examples/talks/        實跑過的範例：演講逐字稿整理成筆記章節（config.toml + task.md）
 ```
 
 自己驗證一次：
@@ -109,18 +110,31 @@ python3 tests/mock_api.py 8801 8802 &      # 另開終端也可
 # 再用 config 指向 http://127.0.0.1:8802/v1、allowed_domains=["127.0.0.1"]、task.md 內寫 INDEX=http://127.0.0.1:8801/index.html
 ```
 
+## 實跑範例（examples/talks）
+
+2026-10-07 用 claude 後端（Sonnet）研究 agent harness 的實務做法，三個來源共 28 項全數完成，結果由 Claude Opus 挑選、去重後併入 ai-agents 筆記（harness-engineering、agent-evals、agent-security）：
+
+| 來源 | 項目 | 備註 |
+|---|---|---|
+| talks：AI Engineer 頻道演講的英文字幕逐字稿，依筆記章節整理 | 22 支 | 先跑 21 支：10 批、14 分鐘、$3.78；字幕抓取約 15 分鐘、0 次 429。之後修正連結 regex（標題含方括號的 Claude Agent SDK workshop 先前被漏掉），補跑這 1 支 |
+| blogs：Anthropic Engineering 最新 2 篇 + Simon Willison `ai-agents` tag 1 篇 | 3 篇 | 已移除 |
+| github：GitHub 搜尋 agent harness 依 stars 挑 3 個 repo（README、AGENTS/CLAUDE 等文件、檔案樹） | 3 個 | 已移除 |
+
+只留 talks 的 `config.toml` 與 `task.md` 當範例（task.md 示範怎麼要求 agent 依筆記章節輸出、每點附時間、標出自動字幕可能聽錯的地方）。回頭看，這個規模用互動式 session 加 subagent 也做得完，runner 的強項（cron、跑數小時、硬性預算）在這裡沒用上；何時該用見 [tools/README.md](../README.md)。
+
+重跑（需要 yt-dlp）：
+
+```bash
+cd examples/talks
+# 從筆記「## 待讀清單」取影片；這份清單已在 2026-10-07 讀完清空，要用先補上連結，或直接在指令後面給影片網址
+python3 ../../../youtube.py --from-note ../../../../ai-agents/concepts/harness-engineering.md --out evidence --seed seed.jsonl
+python3 ../../run.py --config config.toml   # 需要 Python 3.11+（tomllib）
+```
+
+`LIMIT=N` 可限制本次最多抓 N 支；被 YouTube 限流就停下，之後重跑會從沒抓到的那支接續。學術論文來源（Semantic Scholar + arXiv）試過後拿掉：未帶 key 的 S2 API 幾乎一直 429，且重點是實務做法而非論文。
+
 ## 爬取的禮貌與合規
 
 只抓你有權抓的內容；遵守網站條款與 robots.txt；`min_delay_seconds` 別設太小；遇到登入牆、CAPTCHA、403/429 是記錄為 `blocked`，不是繞過。
 
-### 避免 429（實測經驗，2026-10）
-
-- **抓一次、存檔、不重抓**：prep 腳本遇到已存在的輸出就跳過（可續跑）；API 搜尋結果存成檔案當快取。
-- **測試也會吃額度**：可行性測試抓過的檔案直接拿去正式試跑，不要同一份資源再抓一次。
-- **被 429 就停**：整批停下、晚點重跑接續；不要密集重試，不用 cookies，不繞過驗證。
-- 各來源：
-  - arXiv API：間隔 3 秒仍會 429，約 15 分鐘後恢復。
-  - Semantic Scholar（未帶 key）：共用額度，幾乎一直 429；要用就申請免費 key。
-  - YouTube 字幕（yt-dlp）：抓幾支就 429，重抓同一支更快被擋。用 `--sleep-subtitles 10`、每支間隔約 30 秒；每支只抓一條字幕軌：先抓 info.json 挑軌，再用 `--load-info-json` 只下載那一條（實測連抓 21 支、間隔約 45 秒，0 次 429）。
-  - OpenReview：審稿回覆回 403 bot challenge，視為拿不到。
-  - 目前沒問題：`gh` 登入後的 GitHub API、HN Algolia API、Anthropic Engineering、simonwillison.net（間隔 3 秒）。
+抓取時避免 429 的實測經驗（各來源的間隔與限制）見 [tools/README.md](../README.md#避免-429實測經驗2026-10)。

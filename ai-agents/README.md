@@ -20,5 +20,6 @@
 
 ## 工具
 
-- [prep.py](prep.py)：把筆記引用的來源抓一次存進 `.cache/`（檔名即 `[簡稱]`），429 就停
+- 來源表：[tools/sources/ai-agents.py](../tools/sources/ai-agents.py)，把筆記引用的來源抓一次存進 `tools/.cache/ai-agents/`（檔名即 `[簡稱]`），429 就停
 - 檢查簡稱與連結：`python3 tools/check.py ai-agents`
+- 其他工具與整理流程見 [tools/](../tools/README.md)

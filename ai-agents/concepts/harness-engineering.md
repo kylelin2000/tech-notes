@@ -321,7 +321,7 @@
 - [WF26] 為 9 小時直播，只取了少數段落，引用的數據未經深讀驗證。
 - 廠商影片（Oracle、Docker、Cast AI、RELAI）立場偏向自家產品，「意見分歧」一節已盡量並列其他講者的觀點。
 - 同日另補 3 篇工程文章與 3 個開源 harness repo（索引「文章與程式庫」）：文章由 agent 讀全文；repo 只讀 README、AGENTS.md / CLAUDE.md 與檔案樹，沒有讀原始碼，架構描述以這些文件為準。
-- 2026-10-07 補入的 22 支（索引中「agent 摘要」者）：用 [agent-runner](../../experiments/agent-runner/examples/harness-research/) 抓英文自動字幕，由 Claude Sonnet 逐支讀完整逐字稿，依本筆記章節產出結構化摘要（每點附時間），再由 Claude Opus 挑選、去重後併入。沒有人逐支回看影片；自動字幕會聽錯人名與數字，數字後附 (@mm:ss) 方便核對。W&B、Google、Temporal、Factory、Cursor、OpenAI Codex、Anthropic（Skills、Agent SDK）這幾場被 agent 判定為較重的產品宣傳。
+- 2026-10-07 補入的 22 支（索引中「agent 摘要」者）：用 [agent-runner](../../tools/agent-runner/README.md#實跑範例examplestalks) 抓英文自動字幕，由 Claude Sonnet 逐支讀完整逐字稿，依本筆記章節產出結構化摘要（每點附時間），再由 Claude Opus 挑選、去重後併入。沒有人逐支回看影片；自動字幕會聽錯人名與數字，數字後附 (@mm:ss) 方便核對。W&B、Google、Temporal、Factory、Cursor、OpenAI Codex、Anthropic（Skills、Agent SDK）這幾場被 agent 判定為較重的產品宣傳。
 
 ---
 

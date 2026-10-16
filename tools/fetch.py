@@ -1,13 +1,13 @@
-"""各主題的 prep.py 共用（目前是 ai-agents/prep.py）：抓網頁、轉純文字、逐篇跑並記 status。
+"""tools/sources/ 底下各主題的來源腳本共用（目前是 ai-agents.py）：抓網頁、轉純文字、逐篇跑並記 status。
 
-- 抓一次就存進 .cache/<ID>.txt，已存在的跳過。
+- 抓一次就存進 tools/.cache/<主題>/<ID>.txt，已存在的跳過。
 - 429 就整批停下（exit 2），晚點再跑；403／CAPTCHA 標記 blocked，之後全部跑時跳過（指定 ID 才重抓）。都不重試、不繞過。
 """
 import json, re, ssl, subprocess, sys, time, urllib.error, urllib.parse, urllib.request
 from html.parser import HTMLParser
 
 UA = "tech-notes-prep/0.1 (personal study notes; kylelin2000 on GitHub)"
-SPACING = 1.0  # 秒；各 prep.py 依來源調整
+SPACING = 1.0  # 秒；各來源腳本依來源調整
 
 # 仍驗證憑證鏈；只關掉 Python 3.13+ 的 X509 strict（部分 .gov.tw 憑證缺 SKI 會被擋）
 SSL = ssl.create_default_context()
@@ -95,7 +95,7 @@ def main(sources, run, cache):
     unknown = [s for s in sys.argv[1:] if s not in sources]
     if unknown:
         sys.exit(f"不認得的 ID：{' '.join(unknown)}（見 SOURCES）")
-    cache.mkdir(exist_ok=True)
+    cache.mkdir(parents=True, exist_ok=True)
     sf = cache / "status.json"
     status = json.loads(sf.read_text(encoding="utf-8")) if sf.exists() else {}
     ids = sys.argv[1:] or [s for s in sources if not status.get(s, "").startswith("blocked")]
