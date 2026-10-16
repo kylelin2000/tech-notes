@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""抓一次就存進 .cache/<簡稱>.txt，已存在的跳過。ID 就是筆記裡的 [簡稱]。
+"""ai-agents 筆記的來源表。抓一次就存進 tools/.cache/ai-agents/<簡稱>.txt，已存在的跳過。ID 就是筆記裡的 [簡稱]。
 
-python3 ai-agents/prep.py           # 全部
-python3 ai-agents/prep.py CaMeL     # 只跑指定 ID
+python3 tools/sources/ai-agents.py           # 全部
+python3 tools/sources/ai-agents.py CaMeL     # 只跑指定 ID
 
 - 網頁轉純文字；GitHub raw 與網址以 .md 結尾的 Markdown 原樣存；PDF 用 pdftotext。
 - 429、403、CAPTCHA 的處理見 tools/fetch.py。
@@ -10,10 +10,10 @@ python3 ai-agents/prep.py CaMeL     # 只跑指定 ID
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import fetch
 
-CACHE = Path(__file__).parent / ".cache"
+CACHE = Path(__file__).resolve().parents[1] / ".cache" / "ai-agents"
 fetch.SPACING = 3.0  # 秒；arXiv 間隔太短會 429
 RAW = "https://raw.githubusercontent.com/"
 SPEC = "https://modelcontextprotocol.io/specification/latest/"

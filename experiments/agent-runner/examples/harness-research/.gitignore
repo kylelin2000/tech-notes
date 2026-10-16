@@ -1,8 +1,0 @@
-seed.jsonl
-evidence/
-results/
-runs/
-state/
-tools/
-*.log
-*.out

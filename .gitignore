@@ -1,2 +1,16 @@
 __pycache__/
 *.pyc
+
+# 抓下來的原始資料
+tools/.cache/
+
+# agent-runner 執行時產生的檔案
+tools/agent-runner/**/config.toml
+!tools/agent-runner/examples/**/config.toml
+tools/agent-runner/**/state/
+tools/agent-runner/**/runs/
+tools/agent-runner/**/results/
+tools/agent-runner/**/evidence/
+tools/agent-runner/**/seed.jsonl
+tools/agent-runner/**/*.log
+tools/agent-runner/**/*.out
