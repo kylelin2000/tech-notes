@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 470" width="1000" height="470" font-family="'Noto Sans CJK TC','PingFang TC','Microsoft JhengHei',sans-serif">
+  <rect width="1000" height="470" fill="#0d1117"/>
+  <text x="40" y="38" fill="#e6edf3" font-size="20" font-weight="700">Prompt → Context → Harness → Loop → Graph</text>
+  <text x="40" y="62" fill="#8b949e" font-size="13">範圍由窄到寬，人的位置由「寫字」退到「設計組織」</text>
+
+  <!-- 1 Prompt -->
+  <rect x="40" y="290" width="172" height="150" rx="8" fill="#161b22" stroke="#30363d"/>
+  <text x="56" y="320" fill="#e6edf3" font-size="17" font-weight="700">Prompt</text>
+  <text x="56" y="340" fill="#8b949e" font-size="12">2020–2022</text>
+  <text x="56" y="368" fill="#c9d1d9" font-size="13">怎麼講清楚</text>
+  <line x1="56" y1="384" x2="196" y2="384" stroke="#30363d"/>
+  <text x="56" y="406" fill="#f0883e" font-size="13">人：逐次寫 prompt</text>
+
+  <!-- 2 Context -->
+  <rect x="228" y="255" width="172" height="185" rx="8" fill="#161b22" stroke="#30363d"/>
+  <text x="244" y="285" fill="#e6edf3" font-size="17" font-weight="700">Context</text>
+  <text x="244" y="305" fill="#8b949e" font-size="12">2025-06 主流化</text>
+  <text x="244" y="333" fill="#c9d1d9" font-size="13">讓模型看見什麼</text>
+  <line x1="244" y1="384" x2="384" y2="384" stroke="#30363d"/>
+  <text x="244" y="406" fill="#f0883e" font-size="13">人：策展資訊</text>
+
+  <!-- 3 Harness -->
+  <rect x="416" y="220" width="172" height="220" rx="8" fill="#161b22" stroke="#30363d"/>
+  <text x="432" y="250" fill="#e6edf3" font-size="17" font-weight="700">Harness</text>
+  <text x="432" y="270" fill="#8b949e" font-size="12">2023–2024 成形</text>
+  <text x="432" y="298" fill="#c9d1d9" font-size="13">工具・驗證・權限</text>
+  <line x1="432" y1="384" x2="572" y2="384" stroke="#30363d"/>
+  <text x="432" y="406" fill="#f0883e" font-size="13">人：搭鷹架</text>
+
+  <!-- 4 Loop -->
+  <rect x="604" y="185" width="172" height="255" rx="8" fill="#161b22" stroke="#30363d"/>
+  <text x="620" y="215" fill="#e6edf3" font-size="17" font-weight="700">Loop</text>
+  <text x="620" y="235" fill="#8b949e" font-size="12">2025-07 Ralph</text>
+  <text x="620" y="263" fill="#c9d1d9" font-size="13">觀察→修正→再執行</text>
+  <line x1="620" y1="384" x2="760" y2="384" stroke="#30363d"/>
+  <text x="620" y="406" fill="#f0883e" font-size="13">人：調度與調校</text>
+
+  <!-- 5 Graph -->
+  <rect x="792" y="150" width="172" height="290" rx="8" fill="#161b22" stroke="#f0883e" stroke-width="1.5"/>
+  <text x="808" y="180" fill="#e6edf3" font-size="17" font-weight="700">Graph</text>
+  <text x="808" y="200" fill="#8b949e" font-size="12">2026 論戰與綜述</text>
+  <text x="808" y="228" fill="#c9d1d9" font-size="13">多體協同・分支・並行</text>
+  <line x1="808" y1="384" x2="948" y2="384" stroke="#30363d"/>
+  <text x="808" y="406" fill="#f0883e" font-size="13">人：設計組織</text>
+
+  <!-- arrow -->
+  <line x1="40" y1="96" x2="940" y2="96" stroke="#f0883e" stroke-width="2" stroke-dasharray="6 4"/>
+  <polygon points="940,90 954,96 940,102" fill="#f0883e"/>
+  <text x="40" y="118" fill="#f0883e" font-size="12">人往外推</text>
+
+  <text x="40" y="460" fill="#6e7681" font-size="11">⊂ 表示論述範圍由窄到寬，非集合論嚴格子集；章節按時間，公式按範圍。</text>
+</svg>

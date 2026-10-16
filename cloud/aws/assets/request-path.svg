@@ -1,0 +1,137 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1480 800" role="img" aria-label="HTTPS 請求從 Client 經 Route 53、CloudFront 與 WAF，進入 ALB 或 API Gateway，再到 ECS、EKS、EC2、Lambda，讀寫 Redis、Aurora、OpenSearch，並經 VPC Endpoint 存取 DynamoDB、S3、SQS，非同步工作由 worker 消費">
+<style>:root{--bg:#EEF2F5;--surface:#FFFFFF;--ink:#111C26;--muted:#566775;--line:#A3B1BD;--zone-pub:#DDEAF0;--zone-priv:#E4E9EF;--zone-async:#E9E6F2;--vpc-line:#7C8E9C;--accent:#C2410C;--accent2:#2456A6;--f-body:"IBM Plex Sans",Arial,sans-serif;--f-mono:"IBM Plex Mono",Menlo,monospace}
+@media (prefers-color-scheme:dark){:root{--bg:#0D151D;--surface:#16212C;--ink:#E7EEF4;--muted:#97A8B7;--line:#43535F;--zone-pub:#12303A;--zone-priv:#141F2A;--zone-async:#1E1B33;--vpc-line:#5B6E7C;--accent:#FF8F5A;--accent2:#86AEF5}}
+.bg{fill:var(--bg)}
+.box{fill:var(--surface);stroke:var(--line);stroke-width:1.2}
+.vpc{fill:none;stroke:var(--vpc-line);stroke-width:1.4;stroke-dasharray:6 4}
+.zone-pub{fill:var(--zone-pub)} .zone-priv{fill:var(--zone-priv)} .zone-async{fill:var(--zone-async)}
+.t-name{font:600 13px var(--f-body);fill:var(--ink)}
+.t-sub{font:400 10.5px var(--f-body);fill:var(--muted)}
+.t-lbl{font:500 11px var(--f-mono);fill:var(--ink)}
+.t-zone{font:500 10px var(--f-mono);fill:var(--muted);letter-spacing:.06em}
+.t-row{font:600 11px var(--f-mono);fill:var(--muted);letter-spacing:.06em}
+.t-chip{font:500 11.5px var(--f-mono);fill:var(--ink)}
+.chip{fill:var(--surface);stroke:var(--line);stroke-width:1}
+.e-sync{fill:none;stroke:var(--accent);stroke-width:2.2;stroke-linejoin:round}
+.e-async{fill:none;stroke:var(--accent2);stroke-width:2;stroke-dasharray:7 5;stroke-linejoin:round}
+.e-ctl{fill:none;stroke:var(--muted);stroke-width:1.4;stroke-linejoin:round}
+.m-sync{fill:var(--accent)} .m-async{fill:var(--accent2)} .m-ctl{fill:var(--muted)}
+.badge{fill:var(--accent);stroke:var(--surface);stroke-width:1.5}
+.badge-t{font:600 11px var(--f-mono);fill:var(--surface)}</style><rect class="bg" width="1480" height="800"/><defs>
+<marker id="a-sync" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path class="m-sync" d="M0,0 L8,4 L0,8 z"/></marker>
+<marker id="a-async" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path class="m-async" d="M0,0 L8,4 L0,8 z"/></marker>
+<marker id="a-ctl" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path class="m-ctl" d="M0,0 L8,4 L0,8 z"/></marker>
+</defs>
+<rect class="vpc" x="370" y="200" width="705" height="430" rx="10"/>
+<text class="t-zone" x="382" y="219" text-anchor="start">VPC  /  跨 2-3 AZ  /  Internet Gateway</text>
+<rect class="zone-pub" x="385" y="230" width="170" height="380" rx="8"/>
+<text class="t-zone" x="397" y="244" text-anchor="start">Public subnet</text>
+<rect class="zone-priv" x="575" y="230" width="210" height="380" rx="8"/>
+<text class="t-zone" x="587" y="244" text-anchor="start">Private subnet  /  應用層</text>
+<rect class="zone-priv" x="805" y="230" width="250" height="380" rx="8"/>
+<text class="t-zone" x="817" y="244" text-anchor="start">Private subnet  /  資料層</text>
+<text class="t-zone" x="1130" y="240" text-anchor="start">區域託管服務</text>
+<rect class="zone-async" x="1120" y="384" width="220" height="214" rx="8"/>
+<text class="t-zone" x="1132" y="402" text-anchor="start">非同步 / 事件</text>
+<polyline class="e-ctl" points="60,340 60,152 168,152" marker-end="url(#a-ctl)"/>
+<polyline class="e-ctl" points="230,178 230,342" marker-end="url(#a-ctl)"/>
+<polyline class="e-sync" points="110,368 168,368" marker-end="url(#a-sync)"/>
+<polyline class="e-ctl" points="230,392 230,440"/>
+<polyline class="e-sync" points="320,368 398,368" marker-end="url(#a-sync)"/>
+<polyline class="e-sync" points="305,344 305,134 398,134" marker-end="url(#a-sync)"/>
+<polyline class="e-ctl" points="600,134 552,134" marker-end="url(#a-ctl)"/>
+<polyline class="e-sync" points="475,158 475,342" marker-end="url(#a-sync)"/>
+<polyline class="e-sync" points="540,368 565,368"/>
+<polyline class="e-sync" points="565,274 565,484"/>
+<polyline class="e-sync" points="565,274 593,274" marker-end="url(#a-sync)"/>
+<polyline class="e-sync" points="565,344 593,344" marker-end="url(#a-sync)"/>
+<polyline class="e-sync" points="565,414 593,414" marker-end="url(#a-sync)"/>
+<polyline class="e-sync" points="565,484 593,484" marker-end="url(#a-sync)"/>
+<polyline class="e-sync" points="765,274 795,274"/>
+<polyline class="e-sync" points="765,344 795,344"/>
+<polyline class="e-sync" points="765,414 795,414"/>
+<polyline class="e-sync" points="765,484 795,484"/>
+<polyline class="e-sync" points="765,558 795,558"/>
+<polyline class="e-sync" points="795,274 795,558"/>
+<polyline class="e-sync" points="795,274 823,274" marker-end="url(#a-sync)"/>
+<polyline class="e-sync" points="795,344 823,344" marker-end="url(#a-sync)"/>
+<polyline class="e-sync" points="795,414 823,414" marker-end="url(#a-sync)"/>
+<polyline class="e-sync" points="795,558 823,558" marker-end="url(#a-sync)"/>
+<polyline class="e-sync" points="930,298 930,318" marker-end="url(#a-sync)"/>
+<polyline class="e-sync" points="1035,558 1128,558" marker-end="url(#a-sync)"/>
+<polyline class="e-sync" points="1100,274 1100,558"/>
+<polyline class="e-sync" points="1100,274 1128,274" marker-end="url(#a-sync)"/>
+<polyline class="e-sync" points="1100,344 1128,344" marker-end="url(#a-sync)"/>
+<polyline class="e-sync" points="1100,438 1128,438" marker-end="url(#a-sync)"/>
+<polyline class="e-sync" points="1100,498 1128,498" marker-end="url(#a-sync)"/>
+<polyline class="e-ctl" points="595,558 542,558" marker-end="url(#a-ctl)"/>
+<polyline class="e-async" points="1230,598 1230,680 680,680 680,584" marker-end="url(#a-async)"/>
+<g><rect class="box" x="10" y="340" width="100" height="48" rx="6"/><text class="t-name" x="20" y="360">Client</text><text class="t-sub" x="20" y="377">Browser / App</text></g>
+<g><rect class="box" x="170" y="130" width="120" height="48" rx="6"/><text class="t-name" x="180" y="150">Route 53</text><text class="t-sub" x="180" y="167">DNS / 健康檢查</text></g>
+<g><rect class="box" x="170" y="344" width="150" height="48" rx="6"/><text class="t-name" x="180" y="364">CloudFront</text><text class="t-sub" x="180" y="381">CDN / ACM 憑證</text></g>
+<g><rect class="box" x="170" y="440" width="150" height="48" rx="6"/><text class="t-name" x="180" y="460">WAF + Shield</text><text class="t-sub" x="180" y="477">L7 過濾 / DDoS</text></g>
+<g><rect class="box" x="400" y="110" width="150" height="48" rx="6"/><text class="t-name" x="410" y="130">API Gateway</text><text class="t-sub" x="410" y="147">驗證 / 限流 / 轉發</text></g>
+<g><rect class="box" x="600" y="110" width="150" height="48" rx="6"/><text class="t-name" x="610" y="130">Cognito</text><text class="t-sub" x="610" y="147">登入 / 發 token</text></g>
+<g><rect class="box" x="400" y="344" width="140" height="48" rx="6"/><text class="t-name" x="410" y="364">ALB</text><text class="t-sub" x="410" y="381">L7 / TLS</text></g>
+<g><rect class="box" x="400" y="534" width="140" height="48" rx="6"/><text class="t-name" x="410" y="554">NAT Gateway</text><text class="t-sub" x="410" y="571">對外 egress</text></g>
+<g><rect class="box" x="595" y="250" width="170" height="48" rx="6"/><text class="t-name" x="605" y="270">ECS on Fargate</text><text class="t-sub" x="605" y="287">container / 免管 node</text></g>
+<g><rect class="box" x="595" y="320" width="170" height="48" rx="6"/><text class="t-name" x="605" y="340">EKS</text><text class="t-sub" x="605" y="357">Kubernetes / Pod</text></g>
+<g><rect class="box" x="595" y="390" width="170" height="48" rx="6"/><text class="t-name" x="605" y="410">EC2 Auto Scaling</text><text class="t-sub" x="605" y="427">VM / 自管 OS</text></g>
+<g><rect class="box" x="595" y="460" width="170" height="48" rx="6"/><text class="t-name" x="605" y="480">Lambda</text><text class="t-sub" x="605" y="497">事件驅動 / 免伺服器</text></g>
+<g><rect class="box" x="595" y="534" width="170" height="48" rx="6"/><text class="t-name" x="605" y="554">Worker</text><text class="t-sub" x="605" y="571">ECS 或 Lambda 消費</text></g>
+<g><rect class="box" x="825" y="250" width="210" height="48" rx="6"/><text class="t-name" x="835" y="270">ElastiCache Redis</text><text class="t-sub" x="835" y="287">快取 / session / 限流</text></g>
+<g><rect class="box" x="825" y="320" width="210" height="48" rx="6"/><text class="t-name" x="835" y="340">Aurora / RDS</text><text class="t-sub" x="835" y="357">關聯式 / Multi-AZ / replica</text></g>
+<g><rect class="box" x="825" y="390" width="210" height="48" rx="6"/><text class="t-name" x="835" y="410">OpenSearch</text><text class="t-sub" x="835" y="427">全文搜尋 / log 分析</text></g>
+<g><rect class="box" x="825" y="534" width="210" height="48" rx="6"/><text class="t-name" x="835" y="554">VPC Endpoints</text><text class="t-sub" x="835" y="571">私網連 S3 / DynamoDB / SQS</text></g>
+<g><rect class="box" x="1130" y="250" width="200" height="48" rx="6"/><text class="t-name" x="1140" y="270">DynamoDB</text><text class="t-sub" x="1140" y="287">NoSQL / key-value</text></g>
+<g><rect class="box" x="1130" y="320" width="200" height="48" rx="6"/><text class="t-name" x="1140" y="340">S3</text><text class="t-sub" x="1140" y="357">物件 / 上傳 / 備份</text></g>
+<g><rect class="box" x="1130" y="414" width="200" height="48" rx="6"/><text class="t-name" x="1140" y="434">SQS</text><text class="t-sub" x="1140" y="451">queue / 削峰</text></g>
+<g><rect class="box" x="1130" y="474" width="200" height="48" rx="6"/><text class="t-name" x="1140" y="494">SNS / EventBridge</text><text class="t-sub" x="1140" y="511">fan-out / 事件路由</text></g>
+<g><rect class="box" x="1130" y="534" width="200" height="48" rx="6"/><text class="t-name" x="1140" y="554">Kinesis / MSK</text><text class="t-sub" x="1140" y="571">串流 / 高吞吐</text></g>
+<g><circle class="badge" cx="60" cy="246" r="9"/><text class="badge-t" x="60" y="250" text-anchor="middle">1</text></g>
+<text class="t-lbl" x="74" y="250" text-anchor="start">DNS 查詢</text>
+<g><circle class="badge" cx="140" cy="350" r="9"/><text class="badge-t" x="140" y="354" text-anchor="middle">2</text></g>
+<text class="t-lbl" x="140" y="388" text-anchor="middle">HTTPS</text>
+<g><circle class="badge" cx="360" cy="350" r="9"/><text class="badge-t" x="360" y="354" text-anchor="middle">3</text></g>
+<text class="t-lbl" x="360" y="388" text-anchor="middle">回源</text>
+<text class="t-lbl" x="313" y="250" text-anchor="start">/api/*</text>
+<text class="t-lbl" x="238" y="262" text-anchor="start">alias</text>
+<text class="t-lbl" x="575" y="128" text-anchor="middle">JWT</text>
+<text class="t-lbl" x="483" y="290" text-anchor="start">VPC Link</text>
+<g><circle class="badge" cx="565" cy="256" r="9"/><text class="badge-t" x="565" y="260" text-anchor="middle">4</text></g>
+<text class="t-lbl" x="400" y="410" text-anchor="start">依 path / host 轉發</text>
+<text class="t-lbl" x="400" y="423" text-anchor="start">health check</text>
+<g><circle class="badge" cx="795" cy="256" r="9"/><text class="badge-t" x="795" y="260" text-anchor="middle">5</text></g>
+<text class="t-lbl" x="938" y="313" text-anchor="start">miss</text>
+<g><circle class="badge" cx="1230" cy="640" r="9"/><text class="badge-t" x="1230" y="644" text-anchor="middle">6</text></g>
+<text class="t-lbl" x="1244" y="644" text-anchor="start">consumer 拉取 / 觸發</text>
+<text class="t-lbl" x="568" y="550" text-anchor="middle">egress</text>
+<text class="t-row" x="10" y="727" text-anchor="start">橫切 / 安全</text>
+<rect class="chip" x="90" y="706" width="85" height="32" rx="16"/>
+<text class="t-chip" x="132.5" y="727" text-anchor="middle">IAM Role</text>
+<rect class="chip" x="185" y="706" width="48" height="32" rx="16"/>
+<text class="t-chip" x="209.0" y="727" text-anchor="middle">KMS</text>
+<rect class="chip" x="243" y="706" width="137" height="32" rx="16"/>
+<text class="t-chip" x="311.5" y="727" text-anchor="middle">Secrets Manager</text>
+<rect class="chip" x="390" y="706" width="181" height="32" rx="16"/>
+<text class="t-chip" x="480.5" y="727" text-anchor="middle">Security Group / NACL</text>
+<rect class="chip" x="581" y="706" width="92" height="32" rx="16"/>
+<text class="t-chip" x="627.0" y="727" text-anchor="middle">GuardDuty</text>
+<rect class="chip" x="683" y="706" width="100" height="32" rx="16"/>
+<text class="t-chip" x="733.0" y="727" text-anchor="middle">CloudTrail</text>
+<rect class="chip" x="793" y="706" width="100" height="32" rx="16"/>
+<text class="t-chip" x="843.0" y="727" text-anchor="middle">AWS Config</text>
+<text class="t-row" x="10" y="775" text-anchor="start">橫切 / 營運</text>
+<rect class="chip" x="90" y="754" width="100" height="32" rx="16"/>
+<text class="t-chip" x="140.0" y="775" text-anchor="middle">CloudWatch</text>
+<rect class="chip" x="200" y="754" width="63" height="32" rx="16"/>
+<text class="t-chip" x="231.5" y="775" text-anchor="middle">X-Ray</text>
+<rect class="chip" x="273" y="754" width="48" height="32" rx="16"/>
+<text class="t-chip" x="297.0" y="775" text-anchor="middle">ECR</text>
+<rect class="chip" x="331" y="754" width="114" height="32" rx="16"/>
+<text class="t-chip" x="388.0" y="775" text-anchor="middle">CodePipeline</text>
+<rect class="chip" x="455" y="754" width="137" height="32" rx="16"/>
+<text class="t-chip" x="523.5" y="775" text-anchor="middle">Systems Manager</text>
+<rect class="chip" x="602" y="754" width="114" height="32" rx="16"/>
+<text class="t-chip" x="659.0" y="775" text-anchor="middle">Auto Scaling</text>
+</svg>
