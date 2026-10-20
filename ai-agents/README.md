@@ -17,6 +17,9 @@
 
 - [obra/superpowers](https://github.com/obra/superpowers)：給 coding agent 的軟體開發方法論與 skills 框架，brainstorming → 寫計畫 → TDD 實作 → code review 自動觸發；支援 Claude Code、Codex、Cursor、Gemini CLI 等多種 agent
 - [EveryInc/compound-engineering-plugin](https://github.com/EveryInc/compound-engineering-plugin)：Every 的 Compound Engineering 工作流 plugin，核心迴圈是 brainstorm → plan → work → review → compound（把經驗寫回 docs/solutions/ 讓下一輪更輕鬆）；支援 14 種 agent host
+- [dietrichgebert/ponytail](https://github.com/dietrichgebert/ponytail)：讓 agent 當「最懶的資深工程師」的 skill，寫程式前先走「由簡到繁」階梯（需要嗎 → 現成的 → stdlib → 一行），只寫最少的程式碼；附 `/ponytail-review`、`/ponytail-audit` 審查指令，支援 Claude Code、Codex、Cursor、Gemini、Copilot 等約 20 種 agent
+- [ayghri/i-have-adhd](https://github.com/ayghri/i-have-adhd)：讓 agent 回覆先給行動、步驟編號、結尾只留一個具體下一步，去掉寒暄與冗長前言的 skill／plugin，適合注意力有限時讀回覆；支援 Claude Code、Cursor、Codex、Gemini、OpenCode 等
+- [affaan-m/ECC](https://github.com/affaan-m/ECC)（[Skillselion 頁面](https://skillselion.com/marketplace/affaan-m/ECC)）：Everything Claude Code，一整套 agent harness 工程系統，約 71 個 agents、311 個 skills、97 個命令，加上 hooks、rules、記憶與持續學習、AgentShield 安全掃描；Claude Code 原生支援最完整，Codex、Qoder 有原生 plugin，Cursor、OpenCode、Gemini、Copilot 為部分適配
 
 ## 工具
 
