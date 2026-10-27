@@ -126,7 +126,7 @@
 
 - [harness-engineering.md](harness-engineering.md#工具-tools-與-skills)：harness 層的工具取捨（tools、bash、code gen）與 skills。
 - [agent-security.md](agent-security.md)：沙箱、權限與憑證，與本篇 MCP 授權／token 邊界互補。
-- [../hermes/architecture.md](../hermes/architecture.md)：Hermes 的 Tool Broker 就是一個 MCP server，持有憑證並作為內部資源的單一出口。
+- [../../work-experience/hermes-agent.md](../../work-experience/hermes-agent.md)：Hermes 的 Tool Broker 就是一個 MCP server，持有憑證並作為內部資源的單一出口。
 
 ## 來源
 

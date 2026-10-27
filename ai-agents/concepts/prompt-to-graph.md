@@ -155,7 +155,7 @@ Prompt 管怎麼表達任務；Context 決定讓模型看見什麼；Harness 接
 | 需要多輪「做→驗→修」，且有程式化的驗證標準 | 升到 Loop：先確認 verifier / gate 存在 |
 | 任務可拆解並行、需要分支路由、斷點續跑或人機協同，單一 loop 已是瓶頸 | 升到 Graph：同時預期狀態、debug、成本的代價 |
 
-實例：[Hermes Agent 架構](../hermes/architecture.md)（Loop、Self evolution、Security check 的區分與 broker 隔離設計）。
+實例：[Hermes Agent 架構](../../work-experience/hermes-agent.md)（Loop、Self evolution、Security check 的區分與 broker 隔離設計）。
 
 ## 9. 驗證基準與限制
 
