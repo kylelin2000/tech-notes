@@ -3,7 +3,7 @@
 > 個人 AI 助手 / AI Lab / AI 瑞士刀。部署於公司內部 Kubernetes 平台。
 > 本文聚焦**設計概念與架構決策**；個別 job 的參數與判定細節以 repo 內的 `docs/` 為準。
 
-> 概念背景：Loop、Harness、Graph 等術語的演進與適用時機，見 [Prompt → Loop → Graph](../concepts/prompt-to-graph.md)。
+> 概念背景：Loop、Harness、Graph 等術語的演進與適用時機，見 [Prompt → Loop → Graph](../ai-agents/concepts/prompt-to-graph.md)。
 
 ## 1. 背景與目標
 
@@ -24,7 +24,7 @@
 
 ## 3. 整體架構
 
-![Hermes Agent 架構](assets/architecture.svg)
+![Hermes Agent 架構](assets/hermes-agent.svg)
 
 橘色實線是經 broker 的呼叫，灰色虛線是不經 broker 的直連（LLM 推理、公開資料、自帶 token 的 Jira／GitHub），青色線是 broker 對內部資源的 egress。編號依序是：① 人透過 Telegram／Web UI 進來，② agent 以 MCP 呼叫 broker，③ CronJob 以 broker client 身分呼叫，④ broker 持憑證對內部資源 egress。
 

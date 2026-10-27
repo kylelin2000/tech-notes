@@ -80,7 +80,7 @@
 
 ### 套用到 Hermes
 
-以下是本筆記根據 [Hermes 架構文件](../hermes/architecture.md) 已寫內容，套用上面框架的推論，不是任何來源對 Hermes 的主張；文件沒寫的部分標為「未寫明」，需要實際查程式或設定確認。
+以下是本筆記根據 [Hermes 架構文件](../../work-experience/hermes-agent.md) 已寫內容，套用上面框架的推論，不是任何來源對 Hermes 的主張；文件沒寫的部分標為「未寫明」，需要實際查程式或設定確認。
 
 - 不可信輸入有哪些（推論）：
   - 互動路徑：Telegram 與 Web UI 送來的訊息（誰能傳入文件未寫）；agent 經 broker 讀回的 Loki log、Jira saved filter 的內容、GitHub 內容，其中有外部人員可寫入的欄位（如案件文字、issue 內容）。
@@ -100,7 +100,7 @@
 
 - [harness-engineering.md](harness-engineering.md)：Harness 實作做法總覽與完整來源索引
 - [agent-evals.md](agent-evals.md)：持續改進與評估（evals）
-- [../hermes/architecture.md](../hermes/architecture.md)：Hermes 架構（「套用到 Hermes」一節的依據）
+- [../../work-experience/hermes-agent.md](../../work-experience/hermes-agent.md)：Hermes 架構（「套用到 Hermes」一節的依據）
 
 ## 來源
 

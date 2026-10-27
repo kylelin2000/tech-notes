@@ -11,7 +11,6 @@
 - [concepts/coding-agent-ci.md](concepts/coding-agent-ci.md)：把 Claude Code、Codex、Cursor 接進 PR 與 CI（觸發方式、權限、成本控制、最小 workflow）
 - [concepts/productivity-evidence.md](concepts/productivity-evidence.md)：AI 對開發者生產力的實證：METR 2025 RCT 與 2026 後續、DORA 2025
 - [concepts/spec-driven-development.md](concepts/spec-driven-development.md)：Spec-driven development：spec-kit、Kiro、Böckeler 的評析，與 superpowers、compound engineering 對照
-- [hermes/architecture.md](hermes/architecture.md)：Hermes Agent 的架構與設計決策
 
 ## 書籤：Agent 工具與框架
 
