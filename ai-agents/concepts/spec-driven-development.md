@@ -1,6 +1,6 @@
 # Spec-driven development：spec-kit、Kiro 與 Böckeler 的評析
 
-本篇整理 spec-driven development（SDD）的定義分級、spec-kit 與 Kiro 的流程、Birgitta Böckeler（刊於 martinfowler.com）的疑慮，以及與 superpowers、compound engineering 的對照；資料取得日期 2026-10-14，內文的 `[簡稱]` 對應文末來源表。
+本篇整理 spec-driven development（SDD）的定義分級、spec-kit 與 Kiro 的流程、Birgitta Böckeler（刊於 martinfowler.com）的疑慮，以及與 superpowers、compound engineering 的對照；資料取得日期 2026-10-14，內文的 `[簡稱]` 對應文末來源表。2026-11-12 補入 AI Engineer 頻道 2026-10 至 2026-11 上傳的新影片（由 Claude Sonnet 讀逐字稿摘要後併入，未逐支回看影片）。
 
 ## SDD 是什麼
 
@@ -65,6 +65,14 @@
 - compound engineering 的重點不在 spec 本身，而在迴圈尾端「把學到的東西寫下來」，其稱 80% 心力放在規劃與 review、20% 在執行。[CompoundEng]
 - 三者共通的設計是人在「執行前」審核計畫或設計；差別在於 spec-kit／Kiro 把中間文件做成固定檔案結構，superpowers 與 compound engineering 以 skill 串成流程。（本筆記歸納）
 
+## spec 本身的驗證與寫法
+
+- spec 常見缺陷是兩條規則各自合理但無法同時成立（例如「庫存不足時下 back order」對上「不得有 back order」），agent 會忠實實作這種矛盾；缺陷分兩層：單句歧義，以及跨句的衝突與缺口（沒有規則涵蓋某狀態，如閒置訂單）。[Kotyal] (@00:30, @02:30)
+- AWS（Kiro）的做法：LLM 先改寫澄清，不行就形式化成 SMT-LIB 交給 solver 判斷可滿足性，偵測到矛盾再請 LLM 重檢並迭代；判斷歧義時讓 LLM 把同一句翻譯 7 到 10 次、依邏輯等價分群，區分是 spec 真的含糊還是模型偶發。處置是向使用者提出選項，沒答案就用 LLM judge 或放棄實作該段。[Kotyal] (@02:30, @04:30, @05:00)
+- 限制：講者自承沒有 spec 正確性的 oracle，領域知識只有使用者有，分工是 LLM 翻譯、solver 檢查、人決定；形式化用在 agent 的證據仍薄弱。開頭引用的準確度下降 20 到 40% 等數字未說明來源。[Kotyal] (@06:00, @01:30)
+- 寫法取向：OpenProse 主張用宣告式寫 outcome、end state，不手寫 how，跑通後再把 trace 固化；多個 contract 可疊加到同一次 run，也可組成 DAG，中間 contract 當 checkpoint。適合重複、可審計的流程，一次性或探索性任務用 chat 即可，且前提是你大致知道自己要什麼。廠商自家語言，銀行監管文件案例無量化數據。[OpenProse] (@04:00, @42:02, @41:02, @36:01)
+- 組織面：餵給迴圈的 artifact（PRD、spec 等）要預先標準化與模板化，各部門存 context 的方式不同是大組織的阻礙。[Harrysson] (@06:30)
+
 ## 什麼時候值得用
 
 - 來源明確支持的：需要先把需求或設計想清楚的複雜功能、多個實作任務、需要團隊協作文件、需求或設計需要迭代時，Kiro 建議用 Feature Specs；bug 與沒有明確目標的探索則不適合。[Kiro-Feature]
@@ -93,3 +101,6 @@
 | Fowler-SDD | [Understanding Spec-Driven-Development: Kiro, spec-kit, and Tessl（Birgitta Böckeler，martinfowler.com，2025-10-15）](https://martinfowler.com/articles/exploring-gen-ai/sdd-3-tools.html) | 全文 |
 | Superpowers | [obra/superpowers README](https://github.com/obra/superpowers/blob/main/README.md) | 部分（How it works、Basic Workflow、What's Inside；略過安裝）；廠商性質 |
 | CompoundEng | [EveryInc/compound-engineering-plugin README](https://github.com/EveryInc/compound-engineering-plugin/blob/main/README.md) | 部分（Philosophy、The loop、Try it、Skills；略過安裝）；廠商性質 |
+| Kotyal | [Your Spec Has Bugs. Catch Them Before Your Agent Codes., Rajath Mahendrappa Kotyal (AWS)](https://www.youtube.com/watch?v=0EnLxIbAvYk) | 全文 (agent 摘要，2026-11)；廠商性質 |
+| OpenProse | [Stop Telling Agents How, OpenProse 團隊](https://www.youtube.com/watch?v=7T-gldvgfpo) | 全文 (agent 摘要，2026-11)；廠商性質 |
+| Harrysson | [What the Top Companies Do Differently With AI Coding, Martin Harrysson (McKinsey)](https://www.youtube.com/watch?v=21tuT-e4NVo) | 全文 (agent 摘要，2026-11) |

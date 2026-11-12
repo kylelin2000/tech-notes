@@ -1,6 +1,6 @@
 # API 層基本元件：structured outputs、tool calling、prompt caching
 
-本篇整理在 Claude API 與 OpenAI API 上建 agent 時最常碰到的三個 API 層元件：structured outputs、tool calling schema、prompt caching。來源全是兩家的官方文件（廠商性質），資料取得日期 2026-10-14；模型名稱、價格與限制以文件當時的內容為準，會隨版本變動。內文的 `[簡稱]` 對應文末「來源」表。
+本篇整理在 Claude API 與 OpenAI API 上建 agent 時最常碰到的三個 API 層元件：structured outputs、tool calling schema、prompt caching。來源全是兩家的官方文件（廠商性質），資料取得日期 2026-10-14；2026-11-12 補入 AI Engineer 頻道 2026-10 至 2026-11 上傳的新影片（由 Claude Sonnet 讀逐字稿摘要後併入，未逐支回看影片），這些講者的實測與主張只放在「講者的實測與主張」小節，與官方規格分開；模型名稱、價格與限制以文件當時的內容為準，會隨版本變動。內文的 `[簡稱]` 對應文末「來源」表。
 
 ## Structured outputs
 
@@ -74,6 +74,15 @@
 - Claude：`usage` 內的 `cache_creation_input_tokens`（本次寫入）、`cache_read_input_tokens`（本次讀取）、`input_tokens`（最後一個斷點之後、未快取的部分）；總 input 為三者相加。兩個快取欄位都是 0，代表沒有快取（常見原因是未達最小長度）。[Claude-Caching]
 - OpenAI：看 `usage.input_tokens_details.cached_tokens` 與 `cache_write_tokens`，以 cached tokens 除以總 input tokens 算命中率；GPT-5.6 以前的模型 `cached_tokens` 會排除隱藏 system token 並向下取整到 128 的倍數。官方範例中 LLM-as-a-judge 約 70%、multi-turn agent 超過 90%（文件註明為示意，實際依應用而異）。[OpenAI-Caching]
 
+### 講者的實測與主張（非官方規格）
+
+以下是 AI Engineer 演講者的說法，不是文件內容，數字未經本筆記驗證。
+
+- Lance Martin（Anthropic）的說明：prompt cache 是嚴格 prefix match，prefix 改一個 byte 就失效；讀取價約為基本 token 的十分之一（他自己說可能因模型而異，要看定價頁，實際倍率以上面「最小長度、TTL 與計價」的文件為準）；Claude Code 團隊「religiously」追蹤 cache hit rate (@05:00 到 @06:02)。[L.Martin-Prompts]
+- 同一位講者建議的 prompt 結構：system instructions 與 tools 放最前（跨 session 共用快取）、CLAUDE.md 記憶（per project）、session state、再接逐輪增加的 messages (@07:00)。這與文件的 `tools`、`system`、`messages` 階層一致。[L.Martin-Prompts]
+- 同一位講者稱，在內部有預設 harness 的 benchmark 上跑 cache 診斷，找到最多 72% 的成本下降且表現無明顯變化，原因是部分 harness 沒正確用 cache (@07:00 到 @08:00)。這是單一內部案例。[L.Martin-Prompts]
+- George Cameron（Artificial Analysis，獨立 benchmark 公司）的實測主張：cache hit 約有 10 倍 input 折扣；若 cache hit 為 0（例如自架 vLLM 沒開 prompt caching），同一任務從 21 美元變成超過 200 美元 (@13:00)。他們已在網站公布各 provider 的 cache hit percentage，選推論供應商時可當指標 (@13:30)。數據出自其自家 benchmark。[Cameron]
+
 ## 兩家對照表（本筆記歸納）
 
 | 面向 | Claude API | OpenAI API |
@@ -109,3 +118,5 @@
 | OpenAI-StructOut | [Structured model outputs（OpenAI API Docs，2026-10-14 取得）](https://developers.openai.com/api/docs/guides/structured-outputs) | 大部分（文字說明全讀；程式範例區塊未讀）（廠商性質） |
 | OpenAI-FnCall | [Function calling（OpenAI API Docs，2026-10-14 取得）](https://developers.openai.com/api/docs/guides/function-calling) | 大部分（至 Streaming 與 Custom tools 概述；Lark / regex grammar 細節略讀，程式範例未讀）（廠商性質） |
 | OpenAI-Caching | [Prompt caching（OpenAI API Docs，2026-10-14 取得）](https://developers.openai.com/api/docs/guides/prompt-caching) | 全文文字說明（程式範例未讀）（廠商性質） |
+| L.Martin-Prompts | [Your Old Prompts Are Making Claude Worse, Lance Martin (Anthropic)](https://www.youtube.com/watch?v=ys6YQ2yfBpM) | 全文 (agent 摘要，2026-11)，講者實測／主張，非官方規格 |
+| Cameron | [Without Caching, Your AI Agent Costs 10x More, George Cameron (Artificial Analysis)](https://www.youtube.com/watch?v=prGP0huECPo) | 全文 (agent 摘要，2026-11)，講者實測／主張，非官方規格 |

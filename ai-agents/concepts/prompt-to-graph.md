@@ -4,6 +4,8 @@
 >
 > 閱讀提醒：公式按「範圍」排序，章節按「時間」排序，兩者不完全同序（Context 主流化晚於 Harness 論述，所以 §3 Harness 在 §4 Context 之前）。
 
+2026-11-12 補入 AI Engineer 頻道 2026-10 至 2026-11 上傳的新影片（由 Claude Sonnet 讀逐字稿摘要後併入，未逐支回看影片）。
+
 ![Prompt → Context → Harness → Loop → Graph：範圍擴大，人的位置往外退](assets/prompt-to-graph.svg)
 
 ## 五層一覽
@@ -121,6 +123,7 @@ Anthropic 2025-09 的 [Effective context engineering for AI agents](https://www.
 - 2026-07-18：Peter Steinberger 在 X 上問 "Are we still talking loops or did we shift to graphs yet?" 引發論戰。
 - 同日：Hamel Husain 發表〈Loop Engineering Is Dead. Enter Graph Engineering.〉（[TDS 事件記錄](https://towardsdatascience.com/graph-engineering-for-ai-agents-from-prompts-and-loops-to-workflows/)）。
 - 2026-08-21：系統性綜述 [arXiv:2608.21156](https://arxiv.org/abs/2608.21156)（*Graph Engineering in the Era of LLM Agents: From Individual Intelligence to System Intelligence*），其摘要正以 Prompt / Context / Harness / Loop / Graph Engineering 排出本篇同一條鏈。
+- 2026-11 Neo4j 的 Blumenfeld 在 AI Engineer 上定義 graph engineering 為把 agent 工作設計成明確的圖（node 做事、edge 傳 state），並自承名稱是新的、機制（state machine、workflow graph、knowledge graph）不新；他分執行圖、context graph、procedural graph（把 skill 的步驟與決策寫成圖，由程式而非 agent 決定路由）三種，後兩者是他的重點，案例為自家產品、證據薄弱 (@01:00, @15:00)。
 
 ### Loop → Graph 的代價
 
@@ -128,7 +131,7 @@ Anthropic 2025-09 的 [Effective context engineering for AI agents](https://www.
 - 狀態與斷點：節點間要有結構化狀態，失敗後要能從 checkpoint 續跑。
 - 可觀測性：多體互動的 debug 比單一 loop 困難得多，需要完整 tracing。
 - 成本與協調開銷：agent 越多，token 與溝通成本越高。
-- 多體不必然更好：Cognition 主張單執行緒、共享完整 context 的線性 agent 作為預設，因為並行 agent 的行動各自帶著隱含決策，容易互相衝突。Graph 適合「可分解、可並行、廣度型」的任務，不是萬用解。
+- 多體不必然更好：Cognition 主張單執行緒、共享完整 context 的線性 agent 作為預設，因為並行 agent 的行動各自帶著隱含決策，容易互相衝突。Graph 適合「可分解、可並行、廣度型」的任務，不是萬用解。Anthropic Managed Agents 團隊（2026-10）也提到人傾向限制 Claude 的拓樸，但隨模型變強官方持續拿掉護欄，讓 Claude 自己決定 sub agent 數量常常表現更好，且目前沒有 graph 式 workflow UI (@07:01)。
 - 失敗長什麼樣：[Cemri et al.（UC Berkeley 等，NeurIPS 2025 Datasets and Benchmarks）](https://arxiv.org/abs/2503.13657)先以 Grounded Theory 細讀 5 個框架的 150 多條 trace（HyperAgent、AppWorld、AG2、ChatDev、MetaGPT；6 位專家標註，每人逾 20 小時），再經 3 位專家多輪標註，Cohen's κ 達 0.88，得到 MAST（Multi-Agent System Failure Taxonomy）。後以 LLM-as-a-Judge（o1）標註，與人工 κ = 0.77，建成涵蓋 7 個框架、1642 條 trace 的 MAST-Data。
 - 三大類 14 種模式：System Design Issues（如 Disobey Task Specification、Step Repetition、Unaware of Termination Conditions）、Inter-Agent Misalignment（如 Fail to Ask for Clarification、Task Derailment、Reasoning-Action Mismatch）、Task Verification（Premature Termination、No or Incomplete Verification、Incorrect Verification）。
 - 單靠改 prompt 或拓撲修多少：ChatDev 在 ProgramDev-v0 上（同一 user prompt 與 GPT-4o），基線成功率 25.0%；改善角色規格後為 34.4%（+9.4）；另一種做法是改拓撲（DAG 改成循環圖，CTO agent 確認所有審查都通過才結束，即加入高階任務目標的驗證步驟），為 40.6%（相對基線 +15.6）；AG2 在 GSM-Plus 上的改善只有幾個百分點。作者的結論是這些修正有效但不夠，失敗率仍高，要靠更根本的 MAS 重新設計與模型層進展。
@@ -143,9 +146,11 @@ Prompt 管怎麼表達任務；Context 決定讓模型看見什麼；Harness 接
 
 2026 年中 loops vs graphs 論戰的起點，是〈Loop Engineering Is Dead. Enter Graph Engineering.〉這類標題，隨後也出現「loop 沒有死」的反駁與各方解讀。類似句式過去也常見（例如 "prompt engineering is dead"、"RAG is dead"），多半是標題噱頭，實際發展往往是舊層被吸收為新層的部件，而不是消失。
 
+同類論述還有 Jediah Katz（前 Cursor，現 SpaceXAI）2026-10 的〈Is the Agent Harness Dead?〉：他承認花俏 harness 不再增加 coding 智慧，但主張 harness 只是抽象層上升，從組合 LLM call 變成以 agent 為基本單元，也是「舊層被吸收」的寫法 (@17:01)。他把 prompt engineer 到 context engineer 到 harness engineering 的定名時間講成 2023 初、2025 中、2026 初 (@01:00)，與本篇引的 Anthropic 2025-11 harness 用例略有出入，屬講者口述。OpenProse 團隊的〈Stop Telling Agents How〉則從另一端說同一件事：prompting、context、harness 都在往上抽象，應宣告 outcome 而非手寫 how，跑通後再把 trace 固化成 how 以降成本；其實作與 DSPy 相反（讓一切留在自然語言，由 AI 當 compiler）(@04:00, @15:02, @26:01)，廠商自家語言，宣稱未獨立驗證。
+
 ## 8. 什麼時候該升級到下一層
 
-原則：能停在低層就停在低層。Anthropic 的 Building Effective Agents 也建議從最簡單的做法開始。
+原則：能停在低層就停在低層。Anthropic 的 Building Effective Agents 也建議從最簡單的做法開始。swyx 在 2026-10 的開場講得相近：往上一層 loop 是為了提升生產力與放大 inference，發現可靠度問題就往下一層修 (@02:00)。
 
 | 現象 | 該往哪走 |
 | --- | --- |
@@ -186,6 +191,11 @@ Prompt 管怎麼表達任務；Context 決定讓模型看見什麼；Harness 接
 - [Anthropic, Effective harnesses for long-running agents, 2025-11-26](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents)
 - [Graph Engineering in the Era of LLM Agents, arXiv:2608.21156, 2026-08-21](https://arxiv.org/abs/2608.21156)
 - [Nhu Hoang, Graph Engineering for AI Agents: From Prompts and Loops to Workflows, Towards Data Science, 2026-09-14](https://towardsdatascience.com/graph-engineering-for-ai-agents-from-prompts-and-loops-to-workflows/)
+- [Is the Agent Harness Dead?, Jediah Katz (SpaceXAI), 2026-10-19](https://www.youtube.com/watch?v=7Y4sbZgBdnc)（簡稱 Katz；全文 (agent 摘要，2026-11)）
+- [Make Your AI Agents Predictable With Graph Engineering, Zachary Blumenfeld (Neo4j), 2026-11-03](https://www.youtube.com/watch?v=g_NgCLTibiM)（簡稱 Blumenfeld；全文 (agent 摘要，2026-11)，廠商性質）
+- [Stop Telling Agents How, OpenProse 團隊, 2026-10-18](https://www.youtube.com/watch?v=7T-gldvgfpo)（簡稱 OpenProse；全文 (agent 摘要，2026-11)，廠商性質）
+- [The Highest Loop, swyx (AI Engineer), 2026-10-16](https://www.youtube.com/watch?v=Fva8hFosqyQ)（簡稱 swyx；全文 (agent 摘要，2026-11)）
+- [Scheduled Agents, Dreaming and Q&A: Claude Managed Agents (Part 3 of 4), Anthropic, 2026-10-12](https://www.youtube.com/watch?v=qJtcEDc_WJU)（簡稱 CMA-3；全文 (agent 摘要，2026-11)，廠商性質）
 
 ## 延伸追蹤（挑 2–3 個固定看即可）
 
