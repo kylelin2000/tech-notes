@@ -2,7 +2,7 @@
 
 整理自 YouTube 頻道 AI Engineer (@aiDotEngineer) 搜尋 "harness" 的結果，另補 3 篇工程文章與 3 個開源 harness repo，目的是萃取對實作 agent harness 有用的做法，並標註每項資訊的來源。
 
-- 整理日期：2026-10-06；2026-10-07 補入待讀清單的 22 支（由 agent 讀逐字稿後整理，見「範圍與方法」）
+- 整理日期：2026-10-06；2026-10-07 補入待讀清單的 22 支（由 agent 讀逐字稿後整理，見「範圍與方法」）；2026-11-12 補入 AI Engineer 頻道 2026-10 至 2026-11 上傳的新影片（由 Claude Sonnet 讀逐字稿摘要後併入，未逐支回看影片）
 - 性質：個人學習筆記，非官方內容。內容為對公開演講的中文摘要與歸納，版權屬原講者與 AI Engineer，細節與數據請以原影片為準。
 - 相關筆記：概念脈絡見 [prompt-to-graph.md](prompt-to-graph.md)（Prompt → Context → Harness → Loop → Graph 的發展史），本篇聚焦 Harness 層的實作做法。
 - 使用方式：內文中的 `[講者簡稱]` 對應文末「來源索引」表，可直接點連結回原影片。部分影片來自廠商 (Oracle, Docker, Cast AI, RELAI, W&B, Google, Temporal, Factory, Cursor, OpenAI Codex, Anthropic)，帶宣傳性質，已在索引標註。數字後的 (@mm:ss) 是影片時間點，可直接跳去核對。閱讀範圍與限制見文末「範圍與方法」。
@@ -23,10 +23,11 @@
 - 兩層 loop：內層是 coding agent harness（context manager、tools/MCP、memory、skills loader），外層是 workflow（skills、sub agents、MCP、hooks），workflow 是塑造 harness 行為的藍圖。[Touil]
 - 持久執行 (durability) 也該算 harness 的必要組成，而不是可選的基礎設施。[Warrick]
 - Claude Agent SDK = 把 Claude Code 內部反覆重建的元件（tools、loop、prompts、檔案系統、skills、sub agents、compaction、hooks、memory）打包；講者主張 bash + 檔案系統是最強的通用 agent 工具，心力應放在怎麼拆 sub agent、怎麼設計搜尋介面、怎麼驗證，而不是重做 compactor。[Shihipar]
+- Harness 的兩層切法：runtime（agent loop 在哪跑、state 怎麼存才能 resume，近似傳統軟體工程）與 context / orchestration（決定呼叫哪個模型、看到什麼 context，含 prompt、tools、memory、compaction，講者形容為 wild west）(@02:00)。[Katz]
 
 ## 設計原則與取捨（什麼該做，什麼該刪）
 
-- Harness 內含的是「模型做不到什麼」的假設，模型升級後假設會過期。例：Sonnet 4.5 的 "context anxiety" 靠 context reset 補，Opus 4.5 不需要，reset 變成純負擔（延遲，cache 被丟）。每次換模型都要重新檢查哪些元件可以刪。[Bhat&He] [Prabaker]
+- Harness 內含的是「模型做不到什麼」的假設，模型升級後假設會過期。例：Sonnet 4.5 的 "context anxiety" 靠 context reset 補，Opus 4.5 不需要，reset 變成純負擔（延遲，cache 被丟）。每次換模型都要重新檢查哪些元件可以刪。[Bhat&He] [Prabaker] [CMA-1]
 - 刪減的證據：Cursor 用約 200 行 agent 檔取代約 12，000 行 TypeScript；Manus 半年重構 harness 5 次；LangChain deep research 一年重寫 3 次；Vercel 砍掉 80% 工具；WorkOS 刪 95% skills 後結果更好。經驗法則：若模型進步後 harness 反而更複雜，很可能過度設計 ("build to delete")。[Schmid-NoCode] [Nisi]
 - 不要過度設計 (bitter lesson)：做最少的 context 管理，在對的時間把指示給模型；context 的需求不會被模型進步取代。[Lopopolo]
 - 相反觀點：弱模型更依賴 harness，同模型不同 harness 差距超過 20 個百分點（HarnessBench 52.4% 到 76.2%），所以投資 harness 可讓本地開源模型逼近前沿模型。[Bhargava]
@@ -34,6 +35,7 @@
 - 對模型要「引導不要規定」：指示寫目標與限制，不寫死步驟；流程固定就寫腳本。過度 prompt 會拖慢模型（GPT-5 被叫去讀完所有檔案後才改，很慢）。可以直接問模型「我的指示哪裡讓你變慢」。[Schmid-Evals] [Chen&Fioca]
 - 順著模型訓練的習慣：工具要 in-distribution (apply_patch, shell + ripgrep)，與官方 harness 對齊。[Kundel] [Chen&Fioca]
 - 依賴第一方 harness (Codex, Claude Code) 並從外面 steer，而不是自己重寫 coding harness；或用 SDK / app-server 嵌入。[Lopopolo] [Chen&Fioca] [Kundel]
+- 嵌入 Codex 的實務：app server 是包住 harness 的 JSON-RPC 協定（stdio 或 WebSocket），有超過 120 種 client message，涵蓋 thread 與 turn、設定 goal、列 plugin、file search、改檔案系統，比 ACP 能更細地控制個別部件 (@05:00)。建議附加 developer instructions 而非改寫 base instructions，因為 OpenAI 持續為各模型調 prompt 使其 in distribution (@17:00)。協定在版本間會變，要把自己指定版本的 harness 一起打包出貨，不依賴使用者已安裝的 CLI (@09:01)。[Kundel-Harness]
 - 並非所有問題都需要 agent：例 DevOps agent 花兩小時調 prompt，不如 90 秒寫 bash。多數生產環境 agent 是「大量確定性程式 + 少量 LLM 步驟」。[Horthy-12F]
 - 先問要不要 agent：四項檢查（任務複雜度、價值、關鍵能力是否已去風險、出錯代價與發現難度）；決策樹畫得出來就做 workflow。預算反推：每任務約 10 美分只買得起 30 到 50k tokens (@03:01)。[Zhang-EA]
 - 選題的兩個問題：能不能驗證它的工作（lint、編譯、執行），能不能回復（程式碼有 git；computer use 訂外送則不可逆，錯誤會累積）。兩者都是才是好的 agent 題目。[Shihipar]
@@ -46,6 +48,11 @@
 - Codebase 本身就是 harness：模組化、相關程式碼放一起、用模型熟悉的慣例（package.json 的 start script）、提供既有範例讓 agent 照抄；deep module（小介面、大功能）讓 agent 好導航好測試，AI 沒人看管時傾向產出 shallow 結構。[Zakariasson] [Pocock]
 - 從小開始：目標先抓 2 到 3 倍而不是 100 倍；不要閉關三個月蓋 software factory，從小的增量 loop 開始交到同事手上；先做單一序列 loop，別急著平行。[LoopsDebate] [Parsons]
 - 核心要小、能力放 plugin：把模型 context 成本當成核心的持續開銷，可選能力放邊緣；新能力依 capability ladder 決定放哪層（既有 owner → 既有 plugin 契約 → 窄的通用 SDK 能力 → 最後才動核心介面）。DeepSeek 的 harness 更徹底，連 shell、fs、todo、plan、compaction 都是 plugin，loop 本身只留文件化的擴充點。[OpenClaw-repo] [DeepSeek-H]
+- 「harness 已死」的證據：UC Berkeley 比較 Pi、Codex、Claude Code 等 harness 在 7 個 frontier model 上，較新模型的 SWE-bench Lite 分數沒有顯著差異；Apple 與 EPFL 也發現專用 MLE harness 在 MLE-bench 差異不大 (@05:00)。但兩項研究都顯示 harness 對每題成本有顯著差異；講者調 cache hit rate、token efficiency、model mix，在不降品質下降低 Grokbot 的成本與延遲 (@13:01)。與 [Bhargava] 的 20 個百分點相反，見「意見分歧」。[Katz]
+- 領域新就得把 guardrail 加回來：Cursor 一路刪 prompt 與 guardrail，但 Grokbot（長期存活、管理一群 worker 的 coordinator bot）因任務領域新（簡報、訂旅遊、溝通頻率、acting vs asking、memory）反而要加回 prompt 與 guardrail (@08:00)。Data flywheel：harness 讓更難的任務可行，資料回到實驗室，模型內化能力，原本的補丁才能刪 (@06:01)。[Katz]
+- Shim 管理：補模型壞行為的確定性 guardrail（例：使用者等太久時提醒 agent）集中登錄，每次觸發都記錄，有 bot 監看儀表板，shim 不再觸發時自動開 PR 清掉 (@16:00)；少對使用者暴露 harness 內部，降低 Hyrum's Law 的變更成本 (@14:00)。[Katz]
+- Prompt 債：think step-by-step、verification rituals、thoroughness 加強語、scratchpad 指引在 frontier 模型上不再需要，還增加 token 成本；互相矛盾的規則在舊模型被默默忽略，新模型會被搞混 (@02:00)。可用 Claude Code 的 checkup prompt audit 或 Claude API prompt audit 掃 skills、tools、prompts 移除反模式 (@03:00)。許多應用落在成本與品質 Pareto frontier 之內，原因是舊 prompt、沒用 cache、effort 設定不當等小錯誤 (@01:01)。[L.Martin-Prompts]
+- 自建 harness 的演進（Arize 的 Alex agent）：從 2023 年底 prototype 到 2026 年合併為單一 agent 按需載入 skills，全部重建都是 harness 程式碼，沒訓練模型也沒用 agent framework (@04:01)。模型選擇預設「夠快夠好」，時間花在 harness；有些介面（如 filter with AI）單次小模型呼叫即可，不需要 loop (@14:01)。撐過每次重建的六個決策：自家產品全程 tracing、數學與資料在程式碼（程式算聚合，模型推理與解釋，以 tool 暴露）、CI 中的 golden dataset、有明顯修法的錯誤直接修、streaming 與持久化、skills (@18:01)。[F.Ali]
 
 ## Agent loop 與控制流
 
@@ -72,12 +79,16 @@
 - 把人工 SOP 變成 workflow：acpx（ACP 的 headless CLI）內含節點式 workflow，把 PR 處理（找意圖、評實作、解衝突、處理 review、讓 CI 通過）變成標準流程，人看到 PR 時機械工作已做完；review → refactor 迴圈只用來挖淺層 bug，不讓它做設計。[Solmaz]
 - 遞迴 (RLM)：把完整 prompt 或整個 repo 當成 REPL 裡的變數，模型寫程式去探索、切片，需要時用 llm_query 遞迴委派子問題；設定最大步數與遞迴深度當預算；可包成 CLI 當 coding agent 的一個工具，用來翻超大語料。[Weitekamp] [Shashi]
 - 人類是非同步 API：等人回覆不要寫成阻塞函式（服務一掛就丟進度），改用 durable execution 的 wait condition 暫停單一 workflow、用 signal 注入回覆、設 timeout；每筆工作拆成 child workflow，一個人類暫停只卡住一件事。[Warrick]
+- Plan 由誰持有（Alex 的演進）：to-do list 當工具給模型，結果模型大半時間在更新清單（20 次以上 to-do 呼叫沒有實質工作），多次 tool call 後還會失焦；改為 harness 每次呼叫都把 plan 當 message 渲染，連 in-progress 標記後來也拿掉（未完成項依序就是下一步），現正測試完全不用 to-do tool，由 harness 管狀態與完成檢查 (@07:00)。[F.Ali]
+- 結束 turn 用明確的 finish 呼叫：「沒有 tool call 的文字就是完成」在「這輪宣告步驟、下輪才呼叫」的模型上會壞；改為 finish 呼叫，plan 有未完成項時最多退回三次，迭代上限前一步發警告，最後 force finish。使用者可自選 provider，無法逐一測過，所以要對齊所有可能行為 (@08:01)。[F.Ali]
+- 外層 DAG 保持確定性、節點內的 loop 保持自適應 (@16:00)（例：code review 做、檢查、依回饋修、夠好才放行，@05:30）；LangGraph 可管有環圖的 state (@04:00)。把 DAG state 注入 agent context，讓它知道自己在整體流程中的位置 (@10:00)。判斷哪個節點適合交給 agent：能否對照 policy 檢查、放進有界 loop、trace、fallback 到人類 (@13:00)。[Kormos]
+- 單 agent 的三種失敗：agentic laziness（看過 35 個服務健康就推論其餘也沒事）、self-preferential bias、goal drift（compact 後「不要動 production」這類限制可能被遺失）(@72:01 到 @76:01)。fan-out 解法是每個 agent 只負責一小塊（50 個服務各一個），每個 reviewer 在獨立 context 做 adversarial review。代價是花費明顯高於單 agent，單 agent 30 秒能做完的事不適合；可分階段配模型與數量（scan 用 Haiku 每 ticker 兩個，review 用較強模型兩三個）(@27:01 到 @29:01)。上限約 1,000 個 agent（講者說 I think）(@46:01)，目前只支援一層巢狀 (@99:30)；子 agent 共享檔案系統但無目錄層級權限控管，只能靠 prompt 或 tool permissions 攔截 (@51:01)。[Avilla]
 
 ## Context engineering
 
 - 預設假設 context 會被換出：設計時要持續刷新；自動 compaction 品質已提升 (GPT-5.4, server-side compaction)。[Lopopolo] [Kundel]
 - 壓縮策略實測：單純截斷會失憶；LLM 摘要不一致且把重要性交給模型；有效作法是保留頭尾各約 100 字元，中段移入可檢索的 memory store（附 id，位置，預覽），去重，保留最新工具結果，不動 system prompt。[Delucia]
-- 外部化 context：session 是 append-only 事件日誌，模型可回頭讀回被丟棄的片段（近似 Recursive Language Models），壓縮不再是破壞性。[L.Martin] [Bhat&He]
+- 外部化 context：session 是 append-only 事件日誌，模型可回頭讀回被丟棄的片段（近似 Recursive Language Models），壓縮不再是破壞性。[L.Martin] [Bhat&He] [CMA-1] [L.Martin-Prompts]
 - 延遲載入工具 (deferred tools + tool search)；skills 清單上限為 context 的 2%，超過就縮短描述；cache 友善排序。[Kundel]
 - 以子 agent 承接大量資料的任務，主對話保持輕量。[Delucia] [Bhargava]
 - 長對話要有測試：先載入 10 輪再測第 11 輪。[Delucia]
@@ -99,6 +110,10 @@
 - Server-side 狀態：用 interaction ID 帶回 context，免去自行管理 thought signatures，也避免多一個空白就 cache miss。[Leo]
 - 為 prompt prefix cache 保持對話穩定：不重建過往 context，新增的 prompt / tool / context 要有界且確定，transcript bytes 不變，只有 compaction 可以改寫歷史；穩定 prompt 的變更延到下個 session 才生效。[OpenClaw-repo]
 - Context 修剪的 bug 很難抓：Claude Code 為了配合 prompt cache 過期，在閒置 session 清除舊 thinking，本應只做一次卻變成每回合都清，agent 因此健忘、重複，還造成 cache miss 與用量暴增。修剪邏輯要測「閒置後恢復」「工具執行中途追問」這類邊界情況。[Anthropic-PM]
+- 大量 tool 輸出（如 log）會撐爆 context，造成 overflow、hallucination、recall 下降；加大視窗不是解法，注意力曲線只記得開頭和結尾（lost in the middle）(@02:01)。技巧分四類：externalize（搬到外部儲存，用 memory pointer）、select、compress、isolate (@03:00)。Conversation manager 有 sliding window、summarization、兩者結合三種（示範摘要比例 50%、保留最近 4 則）(@04:01)。Anti-patterns：context stuffing、天真的 summarization（可能丟掉答案需要的資訊）、context pollution (@13:00)。Multi-agent swarm 共享整個 context 等於把垃圾灌給其他 agent，改在 agent 間只傳 memory pointer (@10:00)。[Leone]
+- Trajectory 超過視窗時，harness 要求模型先寫 checkpoint 再丟掉被取代的內容，歷史有固定 token 預算 (@11:01)。[F.Ali]
+- Sub agent 不是萬靈丹：每個 sub agent 仍需完整 context，環境 token 與延遲都重，所以要預建索引避免重複處理文件 (@07:00)。企業文件搜尋上線要考慮多租戶、從 Google Drive / SharePoint 抓權限 metadata 而不整批重索引、資料新鮮度 (@15:01)。[G.He]
+- Context 太多會 overexplore（產生不存在的假設），太少會 underexplore，telemetry 又近乎無限，所以重點是「解題所需的精確 context 量」而非選哪種 RAG 實作 (@09:02, @13:01)。[Krovvidi]
 
 ## 工具 (Tools) 與 Skills
 
@@ -134,6 +149,9 @@
 - 一整套小 skill 組成的流程：grill-me（一次一題、每題附推薦答案，可能 40 到 100 題）→ write-a-PRD（含 out-of-scope，保存被否決的決策）→ prd-to-issues → TDD → improve-codebase-architecture，依自己的失敗模式調整。[Pocock]
 - Rules 不要一次裝滿，看到 agent 偏離時才補，像 SOP。[Zakariasson]
 - Skill 的版本化與分享仍未解：GitHub 對非工程師太重，plugin marketplace 版本化的是 plugin 而不是 skill。[Parsons]
+- SKILL.md 刪減有數據：frontier 模型對 skill 內容的通用理解約 70%，對確切 key、參數、數值、步驟只有約 22%（寬鬆與嚴格兩種評分），所以保留精確細節、刪掉通用概念，但這只是優化起點，刪減後仍要跑 evals 驗證 (@12:00)；較小模型已知比例較低，部分 skill 本來就是方向性的不必全刪 (@10:00, @10:30)。29 個 skill 約 14 美元（Haiku 作答、Sonnet 當 judge）(@09:00)。[Petrov]
+- Skill 蒸餾（Voyager 式 skill library）：成功且有意義的 run，把 trace 交給 frontier 模型蒸餾成 skill；失敗 run 訊號更豐富，能補上缺少的 guardrail 與邊界情況 (@11:30)。長任務下初始軌跡決定成敗，skill 用來縮小搜尋空間 (@03:30)；最值得寫的是沒人想重新發現的儀式（回滾腳本與 feature flag 順序、對流失客戶的措辭）(@04:30)。論點是 frontier 智慧是租來的，把程序持久化成自己的資產也是不換模型就降成本的方法 (@14:30)。單一案例，講者為 MCP gateway 廠商。[Wilinski]
+- 使用量數據：控制其他因素下，每週 30 次以上 skill 使用帶來約 30% 的 PR 產出提升，效果大於換模型；同一人換模型家族、Cursor 換 Claude Code、autocomplete 換 agentic 模式，PR 產出變化在統計上都不明顯 (@07:10, @08:02)。9 月時約半數工程師週幾乎沒用 skills，只有 12% 達到高使用量。講者公司販售量測工具；同一份資料的其他產出數據見 [productivity-evidence.md](productivity-evidence.md)。[Arcolano]
 
 ## 驗證，Evaluator 與品質關卡
 
@@ -158,14 +176,18 @@
 - 把「測試通過不夠，要驗證實際行為」寫進 skill；同一個 context 自我驗證會自我肯定，交給只帶少量 context 的 sub-agent。[Parsons]
 - 驗證不只放在最後：有規則就在中途丟 error 並附回饋（Claude Code 在 agent 寫入「還沒讀過的檔案」時直接報錯要它先讀），模型會讀 error 自己調整；用 hook 偵測「沒寫 script 查資料就直接回答」並要求實際去讀。[Shihipar]
 - 不靠真實 API 的回歸測試：錄製 session 快照（model 或使用者看得到的變更都要更新快照，無 key 即可重放）[DeepSeek-H]；以 mock 的模型服務腳本化回應、子程序啟動 CLI 跑 parity 情境 [ClawCode]。可機械檢查的不變式寫成 CI gate（如每檔 100% coverage、重複程式碼偵測）。[DeepSeek-H]
+- 「status comes from records, not model prose」：要求截圖、影片、測試結果、smoke test 等憑證 (@11:45)。示範：UI 顯示報名成功但重新整理後資料消失（只驗 UI 沒驗持久化），驗證流程是 join 一個 email、查 storage 發現是空的 (@25:00)；這個結果讓 agent 知道還沒完成，之後的修復與留作回歸測試是講者口述，demo 中沒有實際跑 (@31:00, @36:00)。成功截圖不等於證明，要確認真的從頭走過 UI 可到達的路徑 (@31:15)。保留每次 run 的 receipts 夜間彙整失敗讓 agent 發 PR，PR 附操作錄影 (@50:30)。給目標與確認指令而不是路徑，過度規定可能降低表現 (@33:30)。[Nisi-Proser]
+- 三種職責三種負責者：scripts 證明可證明的事實、agent 判斷需要 context 的事、人負責只有人該決定的事；source of truth 能回答的問題不交給 AI，也同時壓低成本 (@03:00)。要求 agent 誠實承認搜尋範圍：沒找到不等於不存在，只能說「在搜尋過的地方沒找到」，不得宣告 all clear (@14:02)；PR 描述的意圖不能抵銷程式碼中的發現 (@10:30)。講者自承設計錯誤：兩層檢查獨立平行觸發，彼此看不到對方結果或故障，一邊故障就等人、沒有 fallback；提案（未實作）改為單一入口 classifier (@24:01)；分層 merge 條件見 [coding-agent-ci.md](coding-agent-ci.md)，人工回饋迴圈見 [agent-evals.md](agent-evals.md)。[Joshi]
+- Production 排障需要因果證據鏈：模型為了取悅使用者會給連貫但非因果的答案，被追問還會順著同意 (@10:00)；root cause 建不出證據鏈就以低信心輸出並指向別的方向 (@14:00)，同時顯示被排除的假設（demo 中排除了同時間的 GCP outage）(@18:00)。講者為廠商。[Krovvidi]
+- 讓不確定性可見：執行期錯誤是安靜的（跑 100 份文件漏掉第 30 頁的掃描，沒有 segfault），Extract 輸出 confidence score 與 bounding box，並做工具回餵模型優化 schema (@09:01)。把 agent 的信心與理由輸出成 MCP 的 prompt guidance，每次建立新東西都向使用者解釋做了什麼與為什麼 (@10:00)。核心問題是「agent 錯了誰付代價」：auto mode 出錯看不到，user-first 讓 agent 只剩聊天機器人，講者主張 agent 能力有範圍且人可驗證 (@02:01)。[Arya]
 
 ## 記憶 (Memory)
 
 - 觀念：記憶是 write / manage / read 的控制迴圈，不是資料庫；recall policy 要當一級指標。[Druga]
 - 實驗：資料能完全放進 context 時記憶沒有好處且更貴；長程（答案在第 124 步，問題在第 500 步）時，排序過的 decisions ledger 勝過向量 RAG 與「是否需要記憶」的 gating，而且更便宜；即使給 oracle 正確記憶模型也未必採用。[Druga]
 - 不要預先規定記憶 schema，讓模型自己組織 (bitter lesson)；檔案或 DB 皆可，重點是簡單可程式化。[L.Martin]
-- 同步寫入 (in-band) 會寫出錯誤或區域最佳的記憶，需要離線 "dreaming" 整理（Pokemon 例：原始記憶 5 次全部掉進陷阱，dreaming 後修正）。需用 eval 驗證離線算力值得。[L.Martin] [Bhat&He]
-- 記憶種類：短期，長期，共享，episodic，procedural，semantic。[Martinez] [Malcolm]
+- 同步寫入 (in-band) 會寫出錯誤或區域最佳的記憶，需要離線 "dreaming" 整理（Pokemon 例：原始記憶 5 次全部掉進陷阱，dreaming 後修正）。需用 eval 驗證離線算力值得。Managed Agents 的 Dreaming（research preview）對一個 memory store 與過去 30 天的 session transcript，用多個 sub agent 檢查 memory 漏記、session 遇到的問題與重複問題後更新 memory (@03:00)。[L.Martin] [Bhat&He] [CMA-3]
+- 記憶種類：短期，長期，共享，episodic，procedural，semantic；另有關係型（entity graph，以走訪表達關聯）可與短期、長期組合 (@06:01)。[Martinez] [Malcolm] [Leone]
 - 檔案與資料庫：檔案貼近模型習慣且附加便宜，但沒有交易一致性（平行 agent 要用 git worktree），沒有混合/向量搜尋與備份；建議混合式（短期放檔案，長期偏好升級進 DB）。這是 Oracle 的立場，其他講者 (L.Martin) 則主張重點是通用基底。[Martinez] [Malcolm] [L.Martin]
 - Skill promotion：把耗時數小時的工作流蒸餾成更好的 SKILL.md，再退役舊版。[Martinez]
 - Retro agent：讀 transcript (JSONL) 找 doom loop 與重複工具呼叫，更新通用與框架專屬 markdown 記憶。[Nisi]
@@ -175,6 +197,8 @@
 - Skills 是程序性記憶：只記程序、不記一切；標準化格式讓未來的模型版本也能用。[Zhang&Murag]
 - Continual learning：掃過去的 transcript，把使用者的糾正與偏好抽成 rules；merge 後 PR 上的人類 review comment 是高訊號資料。可與 [Nisi] 的 retro agent 對照。[Zakariasson]
 - 共享記憶的存取控制仍是未解問題；先用 markdown，Notion 之類內容轉成 markdown 讓 agent 直接讀，不走 MCP。[LoopsDebate]
+- 長期 memory 在實務中的收斂：試過 vector retrieval、episodic / semantic store、temporal knowledge graph，最後是每個使用者一個 markdown 檔（上限 8,000 字元），每個完整請求都載入，由 session 結束後的背景工作寫入。優點是小、精確、不撐爆 context、人工 labeler 可審查，單一寫入點也容易確保不混入其他使用者資料 (@12:00)。與 [Druga] [Iusztin&Bouchard] 的「小而簡單」同向。[F.Ali]
+- Observability 只告訴你發生什麼，trace 要轉成 durable context 才算 memory，否則今天的錯會持續重現 (@04:00)。講者主張多數可見改善來自 procedural memory（金融 agent 語氣從建議式滑到指示式，靠更新規則解決）(@05:00)。working memory（本次 run 的 scratchpad、工具結果）與 long-term 要分開，迴圈簡化成 capture、analyze、update (@06:30, @08:00)。踩雷：長時間背景 agent 更新 memory 後，若 runtime state 或快取沒重新讀取，行為不會改變，要確認哪些內容被 cache、更新何時對後續 run 可見 (@13:40)。[Broekhuizen]
 
 ## 沙箱，權限與安全
 
@@ -201,6 +225,9 @@
 - Telemetry in the loop：harness 知道哪裡壞了、花了多少，就能自我修正後繼續。[Koc]
 - Model-visible ⟺ logged：任何進入 model request 的內容都必須能從 session log 重建，新增 model 可見的輸入就要新增 session event；已發佈的 session 格式只能加新版本，不得覆寫或刪除。可與 [Templestein] [Warrick] 的事件日誌對照。[DeepSeek-H]
 - 每項狀態只有一個 owner，caller 只消費 owner 記錄的事實，快取與 projection 由 owner 衍生並有明確失效週期；SQLite 存取走 worker thread（多讀、單一寫入 broker），不在主執行緒做。對應 [Govindarajan] 的單一寫入者。[OpenClaw-repo]
+- Brain / hands / session 解耦：第一版把 session log、harness、sandbox 塞同一個容器，變成 pet（壞了手工救；掉封包與容器死亡症狀相似難 debug；客戶資料在容器內無法查；連客戶 VPC 內的 MCP 要 network peering）(@05:00 到 @07:01)。改版為 session（append-only 事件 log）、brain（harness + Claude）、hands（sandbox、MCP tool call，隨需建立、用完即丟）：sandbox 掛了對 Claude 只是一次失敗的 tool call，harness 掛了換新的並從最後一個事件接續，只有 session log 需要保護 (@08:01)。不必等 sandbox 啟動就能先開始 inference，time to first token 降約 90%（講者口述）(@10:00)。[CMA-1]
+- Sub agent 是分散式系統：orchestrator + workers + 共享可變狀態 + 併發結果合併，失敗模式有 partial failure、dirty read、unbounded fanout、retry 重跑整個任務連 side effect (@01:01)。Sub agent 做一半不丟 exception，而是回型別與成功相同的流暢文字，orchestrator 讀得到結論，讀不到背後做了多少工 (@04:01)。逾時只是「懷疑」不是事實：記成 unknown 並保留真正原因，例如首次啟動要下載的 server 被 30 秒 timeout 誤判（給 initialize 獨立 timeout）、server 崩潰時 timeout 覆蓋 exit code (@05:00)。讓失敗成為值：回傳結構化狀態（做了什麼、沒做什麼、證據、side effects），「檢查後沒問題」和「無法檢查」要分開 (@06:01)。[Konda]
+- SAFE 一致性模型（S、A、F、E 四項，此處只收 S 與 F）：S source facts，每個傳遞的 fact 帶來源、版本、as-of 時間，決策只讀夠新的（例：資料 9:05、9:06 讀、9:07 決策，限制 5 分鐘則通過；9:15 第二次決策超限就拒絕並要求重讀）(@10:00 到 @12:00)。F fanout budgets：多 session 同時 npx cold start 搶同一 package cache 全部失敗，cold start 閘門預設一次兩個、等待上限 15 秒，容量要在啟動前預留，否則是 check-then-act race；下游 rate limit 可能只以一句文字出現，orchestrator 沒讀就會繼續開 worker (@17:00)。代價：不保證事實為真、不給 exactly-once、不 rollback、無跨 worker 全域順序，假設單一 orchestrator (@20:01)。[Konda]
 
 ## 長時間，非同步與組織級 harness
 
@@ -218,6 +245,9 @@
 - 瓶頸理論：先修最大的瓶頸（審查、發佈），否則 AI 反而讓部分團隊變慢；協調問題可能其實是團隊太大。AI 產出變 2 到 3 倍後，團隊協作方式必須重整（Horthy 的三人團隊花了八週）。[Parsons] [Horthy-NV]
 - 歸責：Git 一個 commit 只有一位 signer，agent 的行為最終必須能歸因到人。[LoopsDebate]
 - AGENTS.md 當成 agent 的工作守則：分層、scoped AGENTS.md、程式碼地圖與 anti-patterns，並明定 agent 與人類維護者的授權邊界（例：自動化流程不得合併或關閉 PR / issue，不得直接 push main）。[OpenClaw-repo] [ClawCode]
+- Software factory 的三個指標有順序：autonomy（要多少人類修正）、automation（能跑多久、要多少審查與信任才接受）、final quality；可以高 autonomy 低 automation，例如 agent 常一次做對你仍逐行審 (@03:00 到 @04:01)。三層中先做 control plane：所有工作從 issue tracker 開始，交給 sandbox 內的 headless agent，agent 開 PR，工程師在 PR 留言，讓所有接觸點可被後續工具讀取 (@11:00)；多數時間花在 improvement loops：每日或每週掃 codebase、常見開發 playbook、辨識重複任務並自動化、把學到的修正灌回 skill (@14:00)。難處：舊最佳實務幾週後可能變反模式、是計畫外工作與出貨競爭、所需資訊藏在本機 agent log 或個人腦中 (@09:01)。講者公司後段有產品介紹。[Knox]
+- 顧問觀點的流程重設計：單純在原流程加工具沒用；迭代從兩週 sprint 轉向一到兩天的 Kanban 式，agent 夜間跑、人隔天驗證再重跑 (@05:01)。人類 review 逐步放手：先決定哪裡要人看，信心夠了就拿掉那一關 (@06:01)。build 與 test 壓縮後瓶頸移到上游需求撰寫與下游 release 頻率，橫向的合規、風險、設計規範需編碼給 agent (@14:00)。為 agent 準備 golden examples 而非 codebase 平均水準 (@11:30)。Skills 的問題是 curation：寫 PRD 一件事就能下載約 1,700 個 skills，造成選擇癱瘓 (@10:01)。講者無公開數據來源與方法。[Harrysson]
+- 先做最小本機驗證再上線（Duolingo 寫測試 agent）：一個 Claude Code command 當 orchestrator（跑 Xcode coverage、選檔腳本、兩個 sub-agent 寫測試與開 PR），兩批共 57 個 PR 合併 27 個（約 50%），目的是觀察失敗模式 (@04:01)。對策：XCTest 與 Swift Testing 混用（寫明何時用哪個）、巨大 singleton 難 mock（改 protocol 版並加 lint 規則強制）、flaky 的 concurrency 測試（規則與範例寫進 testing skill），改善 codebase 同時讓人與 agent 都更好測 (@04:30)。上線用 Temporal：child workflow 平行 fan-out、retry / timeout、idempotency，共享狀態放 S3 (@03:01)。選檔腳本依「agent 寫得好測試的信心」打分（view model、repository、data source 加 2.5 倍，legacy 降權，大檔扣分，UI 先跳過）(@06:00)；CI 端的 PR 狀態機與防作弊見 [coding-agent-ci.md](coding-agent-ci.md)。[Agrawal]
 
 ## 成本與模型選擇
 
@@ -231,6 +261,12 @@
 - Agent 缺乏 workflow 那樣的成本 / 延遲控制，需要能以時間、金錢、tokens 定義並強制執行的 budget（開放問題）。[Zhang-EA]
 - 換模型不要當最早採用者，等幾週看是否經得起考驗；同一個模型在不同 harness 上表現不同，所以 eval 同時在測模型、harness 與題目品質。[Khan]
 - 預設 reasoning effort 是產品層的取捨：Claude Code 曾把預設由 high 降到 medium 換取延遲與用量，使用者感受到智能下降後改回；使用者寧可預設高、簡單任務再自行調低，改預設時要在 UI 清楚顯示。[Anthropic-PM]
+- 成本結構的重點在 2026 已從 output token 轉到每次呼叫的 input token 數、cache hit 比例與每任務步數 (@12:00)。案例（AA briefcase 知識工作 benchmark）：Opus 平均每任務約 21 美元，一個任務 165 步，單次 call 約 13 美分，answer token 只佔很小一部分（字幕數字零碎，可能有誤）(@11:00)。同一模型 Opus 5.5 從 low 約 1 美元到 max 約 21 美元每任務，因為 reasoning effort 也改變步數，reasoning token 進訊息歷史累積成後續 input (@14:00)。不同模型每任務成本差數個數量級（頂級超過 5 美元，便宜模型 5 美分以下），開放權重落後最強專有模型約 3 到 9 個月 (@07:00)；同一智慧等級的成本約一年降 10 倍，決策要預期價格快速變動 (@09:30)。任務分兩類：unlimited intelligence（更聰明總是更好）要問預算；limited intelligence（查上月訂閱花費，便宜與昂貴模型答案都是 80 美元）要找達到天花板的最便宜方案 (@17:00)。數據來自講者自家 benchmark。[Cameron]
+- 模型選型：先看通用 Pareto 前緣縮小候選，原型階段用短名單自己測，上線前把短名單（至多約 5 個模型）拿去跑自建 benchmark；通用排名不一定符合自己的任務（例：Gemini 與 Anthropic 系列在複雜試算表任務上都強）(@05:00, @18:00)。[Cameron]
+- Effort 原則：先試較強模型加低 effort，通常比較弱模型加高 effort 更省 token 因而更便宜 (@18:00)；frontier 難題上 extra high 或 max effort 的 token 用量比 medium、low 多很多，結果卻差不多 (@51:30)。用 hill climbing 降成本：設定「表現至少持平、成本下降」，搜 model、effort、prompt；單一案例從 Opus 高 effort 起步，先換新版 Opus 低 effort、再換更小的模型（表現略降、成本大降）、最後調 prompt 把表現救回，成本降約 90% 且表現明顯提升（講者所述）(@17:02)。[L.Martin-Prompts]
+- 已知流程把路由與判斷從 LLM 搬到腳本與小模型，就能降級模型（單次 demo：平均 wall clock 從約 7.5 分鐘降到約 0.5 到 2 分鐘，講者口述，字幕可能有誤），代價是要先有成功的 run 可編譯（講者說那些 run 其實不太一致，@14:00） (@19:00, @19:30)。講者另說成本降「約 100%」，明顯誇大。[Blumenfeld]
+- 新模型出來要重新評估哪個模型適合哪個任務；同一 workflow 內不同子任務（推理、確定性、影像、SQL、log）各 frontier model 擅長不同，講者舉例影像用 Gemini、確定性步驟用 OpenAI、開放式調查用 Claude (@07:00, @12:01)。[Krovvidi]
+- Session 可設 budget（示範 1.25 美元），超過時收到事件，加預算後從原處續跑；刻意不告訴模型預算，因為目前模型知道預算會變得「焦慮」(@39:01, @84:02)。可回應上面 [Zhang-EA] 提的 budget 開放問題。[Avilla]
 
 ## 持續改進與評估 (evals)
 
@@ -254,6 +290,7 @@
 - Software factory 目前沒人真正解決：Huntley 自己的 Loom 六個月沒進展，Cursor 講者也承認尚未完全做到。[LoopsDebate] [Zakariasson]
 - PM 用 vibe coding 做的 prototype 交給工程遷移很痛苦；建議把可互動的前端原型當成「意圖」交付，由工程重寫。[Zakariasson]
 - Multi-agent 的新 injection 途徑：sub-agent 的輸出若被賦予較高信任會形成 trust escalation；長期記憶（CLAUDE.md、memory）被污染後每次啟動都會重新載入。[Anthropic-Contain]
+- 三週重構的教訓：規格被曲解（要求加「agent skills」，plan 用了這個詞就核准，實際上 skill 和 action 是同一個東西、沒有 SKILL.md；核准 plan 不等於實作符合）(@05:01)。成本事故：月初收到約 100 美元的預算警示（平常一週的五倍），Codex 把 unit test 接到 production inference，一天跑約 30 輪；且每日自我反思 agent 產出是空的，因為重構弄壞了 prompt 管線 (@06:01)。重來時改寫新 spec 加 rubric，用四個框架（Claude Agent SDK、Codex、Copilot CLI、Pi）做 bake-off，並讓 Claude 與 Codex 互相多輪對抗式 review (@08:00, @18:01)。讀了 code 之後講者仍維持「不讀 code」的立場，只是改變做法 (@18:01)。個人專案經驗。[Kanazawa]
 
 ### 意見分歧
 
@@ -266,15 +303,15 @@
 - Loop 的實效（Great Loops Debate）：正方 Huntley、Livingstone 認為方向不可逆、軟體越可驗證越適合 loop；反方 Horthy、Pstrucha 認為炒作跑在紀律前面，仍要讀 code、往下一層抽象而不是往上。雙方共識：loop 在可驗證的任務上有效，架構判斷、成本、安全與歸責仍未解。[LoopsDebate]
 - Spec 的角色：Pocock 反對 specs-to-code（只改 spec 不看 code 等於 vibe coding）[Pocock]；Horthy 認為「spec-driven」一詞已失去定義 [Horthy-NV]；Parsons 偏好 just-in-time spec，避免回到瀑布 [Parsons]；Factory 則在寫 code 前先寫 validation contract [Alvoeiro]。
 - 隔離層級：VM [Bichard] [Zakariasson]、git worktree + Docker [Pocock]、每任務一個 K8s pod [Solmaz]。
-- Harness 長期價值：「每次模型進步就刪掉」 [Schmid-NoCode] [Bhat&He] 與「harness 是限制因素」 [Bhat&He] [Bhargava] 並存，實務上是定期以 eval 重新審視。
+- Harness 長期價值：「每次模型進步就刪掉」 [Schmid-NoCode] [Bhat&He] 與「harness 是限制因素」 [Bhat&He] [Bhargava] 並存，實務上是定期以 eval 重新審視。另一種看法是新模型上不同 harness 的分數已無顯著差異，但每題成本差異仍大，新領域反而要把 guardrail 加回來 [Katz]；Managed Agents 團隊也說 thick harness 與 thick skills 的邊界會變，誠實答案是每次換模型都要重跑 evals [CMA-3]。
 
 ## 現成資源（文章，程式庫，工具）
 
 - OpenAI 文章 openai.com/index/harness-engineering 與 Latent Space podcast latent.space/p/harness-eng。[Lopopolo]
 - Martin Fowler 網站的 "Harness engineering for coding agents"；LangChain 相關文章。[Chambers]
 - 12-Factor Agents：github.com/humanlayer/12-factor-agents。[Horthy-12F]
-- Codex CLI/harness 開源 (Apache 2, Rust)；Responses API 開放 schema；app-server 協定。[Kundel] [Chen&Fioca]
-- Claude Agent SDK，Managed Agents（agent，environment，session 三原件；outcomes；dreaming）。[Bhat&He] [L.Martin]
+- Codex CLI/harness 開源 (Apache 2, Rust)；Responses API 開放 schema；app-server 協定。[Kundel] [Chen&Fioca] [Kundel-Harness]
+- Claude Agent SDK，Managed Agents（agent，environment，session 三原件；outcomes；dreaming；deployment = agent + 排程 + 初始訊息 + 可掛載的 memory store / repo / 檔案）。[Bhat&He] [L.Martin] [CMA-3]
 - Strands Agents SDK + Amazon Bedrock AgentCore（memory，runtime，harness 設定檔）；AWS Agent Toolkit。[Chambers]
 - Goose harness 與 Agent Client Protocol (ACP)。[Hancock]
 - Pi (minimal harness) 與 Kimchi (github.com/getkimchi/kimchi)。[CastAI] [Nisi]
@@ -299,10 +336,10 @@
 ## 建議的實作順序（綜合以上的歸納，非單一講者主張）
 
 0. 先確認需要的是 agent 而不是 workflow（四項檢查），並設定每任務預算。[Zhang-EA]
-1. 先寫最小 loop + 工具登錄 + 停止條件 + 迭代上限 + trace 紀錄（事件日誌）。[Kumar] [Templestein] [Horthy-12F]
-2. 加入確定性 verify 關卡與防作弊（讀 trace，雜湊證據），掛在 hook 上；大任務先寫 validation contract 再實作。[Kumar] [Nisi] [Sheikh] [Alvoeiro]
+1. 先寫最小 loop + 工具登錄 + 停止條件 + 迭代上限 + trace 紀錄（事件日誌）；結束用明確的 finish 呼叫。[Kumar] [Templestein] [Horthy-12F] [F.Ali]
+2. 加入確定性 verify 關卡與防作弊（讀 trace，雜湊證據），掛在 hook 上；大任務先寫 validation contract 再實作。[Kumar] [Nisi] [Sheikh] [Alvoeiro] [Nisi-Proser]
 3. 把持久狀態與憑證放在 harness 側，沙箱內憑證為零（見 [agent-security.md](agent-security.md)）；設 deadline 與單一寫入者。[Clark] [Govindarajan]
-4. Context：頭尾保留 + 可檢索 memory store，延遲載入工具，大資料交給子 agent；工作量控制在約 40% / 100k 以內。[Delucia] [Kundel] [Horthy-NV] [Pocock]
+4. Context：頭尾保留 + 可檢索 memory store，延遲載入工具，大資料交給子 agent；工作量控制在約 40% / 100k 以內。[Delucia] [Kundel] [Horthy-NV] [Pocock] [Leone]
 5. Skills 只放 "gotchas"，配 eval 與 ablation；每次換模型重跑。[Nisi] [Schmid-Evals]
 6. 加獨立 evaluator（有 rubric 與真實操作工具），長任務才需要 planner 與 sprint contract。[Prabaker]
 7. 記憶：先讓模型自己寫檔案；有跨 session 價值再加 recall 排序與離線整理，並量測 recall policy。[L.Martin] [Druga]
@@ -322,6 +359,7 @@
 - 廠商影片（Oracle、Docker、Cast AI、RELAI）立場偏向自家產品，「意見分歧」一節已盡量並列其他講者的觀點。
 - 同日另補 3 篇工程文章與 3 個開源 harness repo（索引「文章與程式庫」）：文章由 agent 讀全文；repo 只讀 README、AGENTS.md / CLAUDE.md 與檔案樹，沒有讀原始碼，架構描述以這些文件為準。
 - 2026-10-07 補入的 22 支（索引中「agent 摘要」者）：用 [agent-runner](../../tools/agent-runner/README.md#實跑範例examplestalks) 抓英文自動字幕，由 Claude Sonnet 逐支讀完整逐字稿，依本筆記章節產出結構化摘要（每點附時間），再由 Claude Opus 挑選、去重後併入。沒有人逐支回看影片；自動字幕會聽錯人名與數字，數字後附 (@mm:ss) 方便核對。W&B、Google、Temporal、Factory、Cursor、OpenAI Codex、Anthropic（Skills、Agent SDK）這幾場被 agent 判定為較重的產品宣傳。
+- 2026-11-12 補入：用 yt-dlp 列出頻道最新 400 支上傳，其中 274 支晚於前次最新的已收錄影片；依標題挑出 47 支與本系列筆記主題相關的（略過金融領域應用、GPU／推論基礎設施、語音、支付等），抓英文自動字幕，由 Claude Sonnet 逐支讀完整逐字稿摘要，再由 Claude Sonnet 依主題併入各篇筆記（本篇只收不屬於 evals、security、tools、CI、生產力、SDD、graph、API 的點），Claude Opus 抽查。沒有人逐支回看影片；時間點是依約每 60 秒一個字幕標記估的，誤差約一分鐘。
 
 ---
 
@@ -385,6 +423,31 @@
 | Iusztin&Bouchard | [Turn 10,994 Notes Into Memory, Paul Iusztin & Louis-François Bouchard](https://www.youtube.com/watch?v=ZRM_TfEZcIo) | 全文 (agent 摘要) |
 | Zhang-EA | [How We Build Effective Agents, Barry Zhang (Anthropic, 2025)](https://www.youtube.com/watch?v=D7_ipDqhtwk) | 全文 (agent 摘要) |
 | Shihipar | [Claude Agent SDK [Full Workshop], Thariq Shihipar (Anthropic)](https://www.youtube.com/watch?v=TqC1qOfiVcQ) | 全文 (agent 摘要，廠商性質) |
+| Katz | [Is the Agent Harness Dead?, Jediah Katz (SpaceXAI)](https://www.youtube.com/watch?v=7Y4sbZgBdnc) | 全文 (agent 摘要，2026-11) |
+| CMA-1 | [Decoupling the Brain from the Hands: Claude Managed Agents (Part 1 of 4) (Anthropic)](https://www.youtube.com/watch?v=Uv0nAf_7tyU) | 全文 (agent 摘要，2026-11) |
+| CMA-3 | [Scheduled Agents, Dreaming and Q&A: Claude Managed Agents (Part 3 of 4) (Anthropic)](https://www.youtube.com/watch?v=qJtcEDc_WJU) | 全文 (agent 摘要，2026-11，廠商性質) |
+| Kundel-Harness | [Building on the Codex Harness, Dominik Kundel (OpenAI)](https://www.youtube.com/watch?v=9WiBJRO84yY) | 全文 (agent 摘要，2026-11) |
+| Wilinski | [From 36% to 100%: How Self-Improving Agents Write Their Own Skills, Rafal Wilinski (Runlayer)](https://www.youtube.com/watch?v=u-o0sW9nwmk) | 全文 (agent 摘要，2026-11，廠商性質) |
+| Petrov | [Your SKILL.md Is 70% Stuff the Model Already Knows, Nikolay Petrov (Intel)](https://www.youtube.com/watch?v=yzx4IuEh_tU) | 全文 (agent 摘要，2026-11) |
+| L.Martin-Prompts | [Your Old Prompts Are Making Claude Worse, Lance Martin (Anthropic)](https://www.youtube.com/watch?v=ys6YQ2yfBpM) | 全文 (agent 摘要，2026-11) |
+| F.Ali | [We Kept Rebuilding Our AI Agent. Here's What Survived, Fuad Ali (Arize AI)](https://www.youtube.com/watch?v=YIhvrvHtonk) | 全文 (agent 摘要，2026-11) |
+| Knox | [Harness Engineering: How to Build a Software Factory, Dru Knox (Tessl)](https://www.youtube.com/watch?v=X6l4lpA0_NY) | 全文 (agent 摘要，2026-11) |
+| Harrysson | [What the Top Companies Do Differently With AI Coding, Martin Harrysson & Prakhar Dixit (McKinsey)](https://www.youtube.com/watch?v=21tuT-e4NVo) | 全文 (agent 摘要，2026-11) |
+| Avilla | [Why One AI Agent Isn't Enough (And How to Run 1,000), CJ Avilla & Harrison Stall (Anthropic)](https://www.youtube.com/watch?v=kiClTcJUnhc) | 全文 (agent 摘要，2026-11，廠商性質) |
+| Konda | [Your Sub-Agents Are a Distributed System. Treat Them Like One., Girish Konda (Microsoft)](https://www.youtube.com/watch?v=DxP5aW4VknQ) | 全文 (agent 摘要，2026-11) |
+| Joshi | [60% of Our Data PRs Now Merge With No Human Review, Chetas Joshi (Robinhood)](https://www.youtube.com/watch?v=MQiojLnK-E0) | 全文 (agent 摘要，2026-11) |
+| Nisi-Proser | [Teach Your Agent to Prove It's Done, Nick Nisi & Zack Proser (WorkOS)](https://www.youtube.com/watch?v=q4WC4TowkBo) | 全文 (agent 摘要，2026-11) |
+| Broekhuizen | [Giving AI Agents Memory That Learns, Jake Broekhuizen (LangChain)](https://www.youtube.com/watch?v=KGFyOtl5ktI) | 全文 (agent 摘要，2026-11) |
+| Leone | [Why Bigger Context Windows Won't Save Your Agent, Elizabeth Fuentes Leone (AWS)](https://www.youtube.com/watch?v=DrfyORO8RqA) | 全文 (agent 摘要，2026-11) |
+| Cameron | [Without Caching, Your AI Agent Costs 10x More, George Cameron (Artificial Analysis)](https://www.youtube.com/watch?v=prGP0huECPo) | 全文 (agent 摘要，2026-11) |
+| Krovvidi | [The 6 Pillars of an Agentic Harness for Production, Varun Krovvidi (Resolve AI)](https://www.youtube.com/watch?v=eXA2tjRZIbY) | 全文 (agent 摘要，2026-11，廠商性質) |
+| Blumenfeld | [Make Your AI Agents Predictable With Graph Engineering, Zachary Blumenfeld (Neo4j)](https://www.youtube.com/watch?v=g_NgCLTibiM) | 全文 (agent 摘要，2026-11，廠商性質) |
+| Kormos | [How to Know When an AI Agent Can Work Unsupervised, Evan Kormos (Coinbase)](https://www.youtube.com/watch?v=_4Ph2dhmUFI) | 全文 (agent 摘要，2026-11) |
+| Kanazawa | [I Let Agents Refactor My Codebase for 3 Weeks. Then I Read the Code., Keiji Kanazawa (Microsoft)](https://www.youtube.com/watch?v=6TjFjHPjVH0) | 全文 (agent 摘要，2026-11) |
+| Arya | [Why We Deleted Our MCP Server and Rebuilt It, Abhi Arya (Reducto)](https://www.youtube.com/watch?v=jJQoVkd5yLg) | 全文 (agent 摘要，2026-11) |
+| Arcolano | [Better AI Models Won't Fix Your Engineering Team, Nicholas Arcolano (Jellyfish)](https://www.youtube.com/watch?v=Ve2bAarPA2I) | 全文 (agent 摘要，2026-11) |
+| G.He | [Grep or Embeddings? Agentic Search Over Company Documents, George He (LlamaIndex)](https://www.youtube.com/watch?v=X4w2Pkz5tDY) | 全文 (agent 摘要，2026-11) |
+| Agrawal | [225,000 Lines of Tests, Written and Merged by Agents, Kush Agrawal (Duolingo)](https://www.youtube.com/watch?v=D_4Rn6uLdQM) | 全文 (agent 摘要，2026-11) |
 
 ### 文章與程式庫
 
