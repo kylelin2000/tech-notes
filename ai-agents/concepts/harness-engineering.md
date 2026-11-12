@@ -81,8 +81,8 @@
 - 人類是非同步 API：等人回覆不要寫成阻塞函式（服務一掛就丟進度），改用 durable execution 的 wait condition 暫停單一 workflow、用 signal 注入回覆、設 timeout；每筆工作拆成 child workflow，一個人類暫停只卡住一件事。[Warrick]
 - Plan 由誰持有（Alex 的演進）：to-do list 當工具給模型，結果模型大半時間在更新清單（20 次以上 to-do 呼叫沒有實質工作），多次 tool call 後還會失焦；改為 harness 每次呼叫都把 plan 當 message 渲染，連 in-progress 標記後來也拿掉（未完成項依序就是下一步），現正測試完全不用 to-do tool，由 harness 管狀態與完成檢查 (@07:00)。[F.Ali]
 - 結束 turn 用明確的 finish 呼叫：「沒有 tool call 的文字就是完成」在「這輪宣告步驟、下輪才呼叫」的模型上會壞；改為 finish 呼叫，plan 有未完成項時最多退回三次，迭代上限前一步發警告，最後 force finish。使用者可自選 provider，無法逐一測過，所以要對齊所有可能行為 (@08:01)。[F.Ali]
-- 外層 DAG 保持確定性、節點內的 loop 保持自適應（例：code review 做、檢查、依回饋修、夠好才放行）；LangGraph 可管有環圖的 state (@04:00)。把 DAG state 注入 agent context，讓它知道自己在整體流程中的位置 (@10:00)。判斷哪個節點適合交給 agent：能否對照 policy 檢查、放進有界 loop、trace、fallback 到人類 (@13:00)。[Kormos]
-- 單 agent 的三種失敗：agentic laziness（看過 35 個服務健康就推論其餘也沒事）、self-preferential bias、goal drift（compact 後「不要動 production」這類限制被遺失）(@72:01 到 @76:01)。fan-out 解法是每個 agent 只負責一小塊（50 個服務各一個），每個 reviewer 在獨立 context 做 adversarial review。代價是花費明顯高於單 agent，單 agent 30 秒能做完的事不適合；可分階段配模型與數量（scan 用 Haiku 每 ticker 兩個，review 用較強模型兩三個）(@27:01 到 @29:01)。目前只支援一層巢狀，上限約 1,000 個 agent (@46:01)；子 agent 共享檔案系統但無目錄層級權限控管，只能靠 prompt 或 tool permissions 攔截 (@51:01)。[Avilla]
+- 外層 DAG 保持確定性、節點內的 loop 保持自適應 (@16:00)（例：code review 做、檢查、依回饋修、夠好才放行，@05:30）；LangGraph 可管有環圖的 state (@04:00)。把 DAG state 注入 agent context，讓它知道自己在整體流程中的位置 (@10:00)。判斷哪個節點適合交給 agent：能否對照 policy 檢查、放進有界 loop、trace、fallback 到人類 (@13:00)。[Kormos]
+- 單 agent 的三種失敗：agentic laziness（看過 35 個服務健康就推論其餘也沒事）、self-preferential bias、goal drift（compact 後「不要動 production」這類限制可能被遺失）(@72:01 到 @76:01)。fan-out 解法是每個 agent 只負責一小塊（50 個服務各一個），每個 reviewer 在獨立 context 做 adversarial review。代價是花費明顯高於單 agent，單 agent 30 秒能做完的事不適合；可分階段配模型與數量（scan 用 Haiku 每 ticker 兩個，review 用較強模型兩三個）(@27:01 到 @29:01)。上限約 1,000 個 agent（講者說 I think）(@46:01)，目前只支援一層巢狀 (@99:30)；子 agent 共享檔案系統但無目錄層級權限控管，只能靠 prompt 或 tool permissions 攔截 (@51:01)。[Avilla]
 
 ## Context engineering
 
@@ -149,9 +149,9 @@
 - 一整套小 skill 組成的流程：grill-me（一次一題、每題附推薦答案，可能 40 到 100 題）→ write-a-PRD（含 out-of-scope，保存被否決的決策）→ prd-to-issues → TDD → improve-codebase-architecture，依自己的失敗模式調整。[Pocock]
 - Rules 不要一次裝滿，看到 agent 偏離時才補，像 SOP。[Zakariasson]
 - Skill 的版本化與分享仍未解：GitHub 對非工程師太重，plugin marketplace 版本化的是 plugin 而不是 skill。[Parsons]
-- SKILL.md 刪減有數據：frontier 模型對 skill 內容的通用理解約 70%，對確切 key、參數、數值、步驟只有約 22%（寬鬆與嚴格兩種評分），所以保留精確細節、刪掉通用概念；較小模型已知比例較低，部分 skill 本來就是方向性的不必全刪 (@10:00, @10:30)。29 個 skill 約 14 美元（Haiku 作答、Sonnet 當 judge）(@09:00)。[Petrov]
+- SKILL.md 刪減有數據：frontier 模型對 skill 內容的通用理解約 70%，對確切 key、參數、數值、步驟只有約 22%（寬鬆與嚴格兩種評分），所以保留精確細節、刪掉通用概念，但這只是優化起點，刪減後仍要跑 evals 驗證 (@12:00)；較小模型已知比例較低，部分 skill 本來就是方向性的不必全刪 (@10:00, @10:30)。29 個 skill 約 14 美元（Haiku 作答、Sonnet 當 judge）(@09:00)。[Petrov]
 - Skill 蒸餾（Voyager 式 skill library）：成功且有意義的 run，把 trace 交給 frontier 模型蒸餾成 skill；失敗 run 訊號更豐富，能補上缺少的 guardrail 與邊界情況 (@11:30)。長任務下初始軌跡決定成敗，skill 用來縮小搜尋空間 (@03:30)；最值得寫的是沒人想重新發現的儀式（回滾腳本與 feature flag 順序、對流失客戶的措辭）(@04:30)。論點是 frontier 智慧是租來的，把程序持久化成自己的資產也是不換模型就降成本的方法 (@14:30)。單一案例，講者為 MCP gateway 廠商。[Wilinski]
-- 使用量數據：控制其他因素下，每週 30 次以上 skill 使用帶來約 30% 的 PR 產出提升，效果大於換模型；同一人換模型家族、Cursor 換 Claude Code、autocomplete 換 agentic 模式，PR 產出變化在統計上都不明顯 (@07:10, @08:02)。9 月時約半數工程師週幾乎沒用 skills，只有 12% 達到高使用量。講者公司販售量測工具。[Arcolano]
+- 使用量數據：控制其他因素下，每週 30 次以上 skill 使用帶來約 30% 的 PR 產出提升，效果大於換模型；同一人換模型家族、Cursor 換 Claude Code、autocomplete 換 agentic 模式，PR 產出變化在統計上都不明顯 (@07:10, @08:02)。9 月時約半數工程師週幾乎沒用 skills，只有 12% 達到高使用量。講者公司販售量測工具；同一份資料的其他產出數據見 [productivity-evidence.md](productivity-evidence.md)。[Arcolano]
 
 ## 驗證，Evaluator 與品質關卡
 
@@ -176,9 +176,9 @@
 - 把「測試通過不夠，要驗證實際行為」寫進 skill；同一個 context 自我驗證會自我肯定，交給只帶少量 context 的 sub-agent。[Parsons]
 - 驗證不只放在最後：有規則就在中途丟 error 並附回饋（Claude Code 在 agent 寫入「還沒讀過的檔案」時直接報錯要它先讀），模型會讀 error 自己調整；用 hook 偵測「沒寫 script 查資料就直接回答」並要求實際去讀。[Shihipar]
 - 不靠真實 API 的回歸測試：錄製 session 快照（model 或使用者看得到的變更都要更新快照，無 key 即可重放）[DeepSeek-H]；以 mock 的模型服務腳本化回應、子程序啟動 CLI 跑 parity 情境 [ClawCode]。可機械檢查的不變式寫成 CI gate（如每檔 100% coverage、重複程式碼偵測）。[DeepSeek-H]
-- 「status comes from records, not model prose」：要求截圖、影片、測試結果、smoke test 等憑證 (@11:45)。示範：UI 顯示報名成功但重新整理後資料消失（只驗 UI 沒驗持久化），驗證流程是 join 一個 email、查 storage 發現是空的，agent 因此知道沒完成並自行修復，留作回歸測試 (@36:00)。成功截圖不等於證明，要確認真的從頭走過 UI 可到達的路徑 (@31:15)。保留每次 run 的 receipts 夜間彙整失敗讓 agent 發 PR，PR 附操作錄影 (@50:30)。給目標與確認指令而不是路徑，過度規定可能降低表現 (@33:30)。[Nisi-Proser]
-- 三種職責三種負責者：scripts 證明可證明的事實、agent 判斷需要 context 的事、人負責只有人該決定的事；source of truth 能回答的問題不交給 AI，也同時壓低成本 (@03:00)。要求 agent 誠實承認搜尋範圍：沒找到不等於不存在，只能說「在搜尋過的地方沒找到」，不得宣告 all clear；PR 描述的意圖不能抵銷程式碼中的發現 (@14:02)。講者自承設計錯誤：兩層檢查獨立平行觸發，彼此看不到對方結果或故障，一邊故障就等人、沒有 fallback；提案（未實作）改為單一入口 classifier (@24:01)。[Joshi]
-- Production 排障需要因果證據鏈：模型為了取悅使用者會給連貫但非因果的答案，被追問還會順著同意 (@10:00)；root cause 建不出證據鏈就以低信心輸出並指向別的方向，同時顯示被排除的假設（如同時間的 GCP outage）(@14:00)。講者為廠商。[Krovvidi]
+- 「status comes from records, not model prose」：要求截圖、影片、測試結果、smoke test 等憑證 (@11:45)。示範：UI 顯示報名成功但重新整理後資料消失（只驗 UI 沒驗持久化），驗證流程是 join 一個 email、查 storage 發現是空的 (@25:00)；這個結果讓 agent 知道還沒完成，之後的修復與留作回歸測試是講者口述，demo 中沒有實際跑 (@31:00, @36:00)。成功截圖不等於證明，要確認真的從頭走過 UI 可到達的路徑 (@31:15)。保留每次 run 的 receipts 夜間彙整失敗讓 agent 發 PR，PR 附操作錄影 (@50:30)。給目標與確認指令而不是路徑，過度規定可能降低表現 (@33:30)。[Nisi-Proser]
+- 三種職責三種負責者：scripts 證明可證明的事實、agent 判斷需要 context 的事、人負責只有人該決定的事；source of truth 能回答的問題不交給 AI，也同時壓低成本 (@03:00)。要求 agent 誠實承認搜尋範圍：沒找到不等於不存在，只能說「在搜尋過的地方沒找到」，不得宣告 all clear (@14:02)；PR 描述的意圖不能抵銷程式碼中的發現 (@10:30)。講者自承設計錯誤：兩層檢查獨立平行觸發，彼此看不到對方結果或故障，一邊故障就等人、沒有 fallback；提案（未實作）改為單一入口 classifier (@24:01)；分層 merge 條件見 [coding-agent-ci.md](coding-agent-ci.md)，人工回饋迴圈見 [agent-evals.md](agent-evals.md)。[Joshi]
+- Production 排障需要因果證據鏈：模型為了取悅使用者會給連貫但非因果的答案，被追問還會順著同意 (@10:00)；root cause 建不出證據鏈就以低信心輸出並指向別的方向 (@14:00)，同時顯示被排除的假設（demo 中排除了同時間的 GCP outage）(@18:00)。講者為廠商。[Krovvidi]
 - 讓不確定性可見：執行期錯誤是安靜的（跑 100 份文件漏掉第 30 頁的掃描，沒有 segfault），Extract 輸出 confidence score 與 bounding box，並做工具回餵模型優化 schema (@09:01)。把 agent 的信心與理由輸出成 MCP 的 prompt guidance，每次建立新東西都向使用者解釋做了什麼與為什麼 (@10:00)。核心問題是「agent 錯了誰付代價」：auto mode 出錯看不到，user-first 讓 agent 只剩聊天機器人，講者主張 agent 能力有範圍且人可驗證 (@02:01)。[Arya]
 
 ## 記憶 (Memory)
@@ -211,7 +211,7 @@
 - 「模型提議，harness 提交，收據證明」：transcript 不是證據，收據記錄突變，使用的授權，以及是否真的抵達使用者。[Govindarajan]
 - 五種失敗：狀態未持久化（每個事實需有單一 owner 與可重現路徑）；多寫入者覆蓋（每個狀態邊界一條有序提交路徑，讀可平行）；工具無期限（deadline，watchdog，取消）；核准漂移；內部成功不等於使用者可見成功。[Govindarajan]
 - Run receipt audit 五問：什麼觸發? 繼承什麼狀態? 用了什麼授權? 執行了什麼? 留下什麼證據?[Govindarajan]
-- Session 事件日誌四狀態：idle，running，rescheduling，terminated；持久化可觀測並支援恢復。[Bhat&He] [CMA-1]
+- Session 事件日誌四狀態：idle，running，rescheduling，terminated；持久化可觀測並支援恢復。[Bhat&He]
 - Idempotency key，鎖，排序，事件去重。[Govindarajan]
 - 觀測先於一切：「observability 與 evals 要最先考慮」；觀測也是持續改進的基底。[Chambers] [Trivedy]
 - 長程 loop 的耐久性：串流中斷後可續跑，持久化 thread，queue/steer/interrupt。[Bhagwat]
@@ -247,7 +247,7 @@
 - AGENTS.md 當成 agent 的工作守則：分層、scoped AGENTS.md、程式碼地圖與 anti-patterns，並明定 agent 與人類維護者的授權邊界（例：自動化流程不得合併或關閉 PR / issue，不得直接 push main）。[OpenClaw-repo] [ClawCode]
 - Software factory 的三個指標有順序：autonomy（要多少人類修正）、automation（能跑多久、要多少審查與信任才接受）、final quality；可以高 autonomy 低 automation，例如 agent 常一次做對你仍逐行審 (@03:00 到 @04:01)。三層中先做 control plane：所有工作從 issue tracker 開始，交給 sandbox 內的 headless agent，agent 開 PR，工程師在 PR 留言，讓所有接觸點可被後續工具讀取 (@11:00)；多數時間花在 improvement loops：每日或每週掃 codebase、常見開發 playbook、辨識重複任務並自動化、把學到的修正灌回 skill (@14:00)。難處：舊最佳實務幾週後可能變反模式、是計畫外工作與出貨競爭、所需資訊藏在本機 agent log 或個人腦中 (@09:01)。講者公司後段有產品介紹。[Knox]
 - 顧問觀點的流程重設計：單純在原流程加工具沒用；迭代從兩週 sprint 轉向一到兩天的 Kanban 式，agent 夜間跑、人隔天驗證再重跑 (@05:01)。人類 review 逐步放手：先決定哪裡要人看，信心夠了就拿掉那一關 (@06:01)。build 與 test 壓縮後瓶頸移到上游需求撰寫與下游 release 頻率，橫向的合規、風險、設計規範需編碼給 agent (@14:00)。為 agent 準備 golden examples 而非 codebase 平均水準 (@11:30)。Skills 的問題是 curation：寫 PRD 一件事就能下載約 1,700 個 skills，造成選擇癱瘓 (@10:01)。講者無公開數據來源與方法。[Harrysson]
-- 先做最小本機驗證再上線（Duolingo 寫測試 agent）：一個 Claude Code command 當 orchestrator（跑 Xcode coverage、選檔腳本、兩個 sub-agent 寫測試與開 PR），兩批共 57 個 PR 合併 27 個（約 50%），目的是觀察失敗模式 (@04:01)。對策：XCTest 與 Swift Testing 混用（寫明何時用哪個）、巨大 singleton 難 mock（改 protocol 版並加 lint 規則強制）、flaky 的 concurrency 測試（規則與範例寫進 testing skill），改善 codebase 同時讓人與 agent 都更好測 (@04:30)。上線用 Temporal：child workflow 平行 fan-out、retry / timeout、idempotency，共享狀態放 S3 (@03:01)。選檔腳本依「agent 寫得好測試的信心」打分（view model、repository 加 2.5 倍，legacy 降權，大檔扣分，UI 先跳過）(@06:00)。[Agrawal]
+- 先做最小本機驗證再上線（Duolingo 寫測試 agent）：一個 Claude Code command 當 orchestrator（跑 Xcode coverage、選檔腳本、兩個 sub-agent 寫測試與開 PR），兩批共 57 個 PR 合併 27 個（約 50%），目的是觀察失敗模式 (@04:01)。對策：XCTest 與 Swift Testing 混用（寫明何時用哪個）、巨大 singleton 難 mock（改 protocol 版並加 lint 規則強制）、flaky 的 concurrency 測試（規則與範例寫進 testing skill），改善 codebase 同時讓人與 agent 都更好測 (@04:30)。上線用 Temporal：child workflow 平行 fan-out、retry / timeout、idempotency，共享狀態放 S3 (@03:01)。選檔腳本依「agent 寫得好測試的信心」打分（view model、repository、data source 加 2.5 倍，legacy 降權，大檔扣分，UI 先跳過）(@06:00)；CI 端的 PR 狀態機與防作弊見 [coding-agent-ci.md](coding-agent-ci.md)。[Agrawal]
 
 ## 成本與模型選擇
 
@@ -262,8 +262,9 @@
 - 換模型不要當最早採用者，等幾週看是否經得起考驗；同一個模型在不同 harness 上表現不同，所以 eval 同時在測模型、harness 與題目品質。[Khan]
 - 預設 reasoning effort 是產品層的取捨：Claude Code 曾把預設由 high 降到 medium 換取延遲與用量，使用者感受到智能下降後改回；使用者寧可預設高、簡單任務再自行調低，改預設時要在 UI 清楚顯示。[Anthropic-PM]
 - 成本結構的重點在 2026 已從 output token 轉到每次呼叫的 input token 數、cache hit 比例與每任務步數 (@12:00)。案例（AA briefcase 知識工作 benchmark）：Opus 平均每任務約 21 美元，一個任務 165 步，單次 call 約 13 美分，answer token 只佔很小一部分（字幕數字零碎，可能有誤）(@11:00)。同一模型 Opus 5.5 從 low 約 1 美元到 max 約 21 美元每任務，因為 reasoning effort 也改變步數，reasoning token 進訊息歷史累積成後續 input (@14:00)。不同模型每任務成本差數個數量級（頂級超過 5 美元，便宜模型 5 美分以下），開放權重落後最強專有模型約 3 到 9 個月 (@07:00)；同一智慧等級的成本約一年降 10 倍，決策要預期價格快速變動 (@09:30)。任務分兩類：unlimited intelligence（更聰明總是更好）要問預算；limited intelligence（查上月訂閱花費，便宜與昂貴模型答案都是 80 美元）要找達到天花板的最便宜方案 (@17:00)。數據來自講者自家 benchmark。[Cameron]
-- Effort 原則：先試較強模型加低 effort，通常比較弱模型加高 effort 更省 token 因而更便宜；高 effort 的差異主要出現在 frontier 難題 (@18:00)。用 hill climbing 降成本：設定「表現至少持平、成本下降」，搜 model、effort、prompt；單一案例從 Opus 高 effort 起步，成本降約 90% 且表現小幅提升（講者所述）(@17:02)。[L.Martin-Prompts]
-- 已知流程把路由與判斷從 LLM 搬到腳本與小模型，就能降級模型（單次 demo：平均 wall clock 從約 7.5 分鐘降到約 0.5 到 2 分鐘，講者口述，字幕可能有誤），代價是流程要先有穩定的成功樣本可編譯 (@19:00, @19:30)。講者另說成本降「約 100%」，明顯誇大。[Blumenfeld]
+- 模型選型：先看通用 Pareto 前緣縮小候選，原型階段用短名單自己測，上線前把短名單（至多約 5 個模型）拿去跑自建 benchmark；通用排名不一定符合自己的任務（例：Gemini 與 Anthropic 系列在複雜試算表任務上都強）(@05:00, @18:00)。[Cameron]
+- Effort 原則：先試較強模型加低 effort，通常比較弱模型加高 effort 更省 token 因而更便宜 (@18:00)；frontier 難題上 extra high 或 max effort 的 token 用量比 medium、low 多很多，結果卻差不多 (@51:30)。用 hill climbing 降成本：設定「表現至少持平、成本下降」，搜 model、effort、prompt；單一案例從 Opus 高 effort 起步，先換新版 Opus 低 effort、再換更小的模型（表現略降、成本大降）、最後調 prompt 把表現救回，成本降約 90% 且表現明顯提升（講者所述）(@17:02)。[L.Martin-Prompts]
+- 已知流程把路由與判斷從 LLM 搬到腳本與小模型，就能降級模型（單次 demo：平均 wall clock 從約 7.5 分鐘降到約 0.5 到 2 分鐘，講者口述，字幕可能有誤），代價是要先有成功的 run 可編譯（講者說那些 run 其實不太一致，@14:00） (@19:00, @19:30)。講者另說成本降「約 100%」，明顯誇大。[Blumenfeld]
 - 新模型出來要重新評估哪個模型適合哪個任務；同一 workflow 內不同子任務（推理、確定性、影像、SQL、log）各 frontier model 擅長不同，講者舉例影像用 Gemini、確定性步驟用 OpenAI、開放式調查用 Claude (@07:00, @12:01)。[Krovvidi]
 - Session 可設 budget（示範 1.25 美元），超過時收到事件，加預算後從原處續跑；刻意不告訴模型預算，因為目前模型知道預算會變得「焦慮」(@39:01, @84:02)。可回應上面 [Zhang-EA] 提的 budget 開放問題。[Avilla]
 
@@ -272,7 +273,6 @@
 - 本章內容已拆到 [agent-evals.md](agent-evals.md)。
 - 每次失敗都是 harness bug：修 harness 而不是修產出。[Nisi] [Lopopolo]
 - Harness 變更要當成模型變更來發布（Claude Code 品質事件）。[Anthropic-PM]
-- 自我改善 agent：每 24 小時對過去 24 小時（約 200 筆）取失敗者（約 50 筆）與評語找共通點，給它 skills 與程式碼庫的修改權；產出如加入 coverage pyramid 減少冗餘測試 (@12:01)。改進以待審 PR 放進 inbox，範例：triage skill 缺少允許 spawn sub-agents 的設定，agent 反覆浪費 tool call，PR 補上後省 token (@18:01)。資料需要 transcript、tool calls、output 三樣，本機 agent 的對話是檔案，有團隊把每人的 .claude 資料夾壓縮丟到共用 S3 (@03:01)。[Holmes]
 
 ## 反例，風險與爭議點
 
@@ -437,7 +437,6 @@
 | Konda | [Your Sub-Agents Are a Distributed System. Treat Them Like One., Girish Konda (Microsoft)](https://www.youtube.com/watch?v=DxP5aW4VknQ) | 全文 (agent 摘要，2026-11) |
 | Joshi | [60% of Our Data PRs Now Merge With No Human Review, Chetas Joshi (Robinhood)](https://www.youtube.com/watch?v=MQiojLnK-E0) | 全文 (agent 摘要，2026-11) |
 | Nisi-Proser | [Teach Your Agent to Prove It's Done, Nick Nisi & Zack Proser (WorkOS)](https://www.youtube.com/watch?v=q4WC4TowkBo) | 全文 (agent 摘要，2026-11) |
-| Holmes | [Your AI Agent Is Hiding Its Mistakes From You, Ben Holmes (Warp)](https://www.youtube.com/watch?v=pz74r-4dGfQ) | 全文 (agent 摘要，2026-11) |
 | Broekhuizen | [Giving AI Agents Memory That Learns, Jake Broekhuizen (LangChain)](https://www.youtube.com/watch?v=KGFyOtl5ktI) | 全文 (agent 摘要，2026-11) |
 | Leone | [Why Bigger Context Windows Won't Save Your Agent, Elizabeth Fuentes Leone (AWS)](https://www.youtube.com/watch?v=DrfyORO8RqA) | 全文 (agent 摘要，2026-11) |
 | Cameron | [Without Caching, Your AI Agent Costs 10x More, George Cameron (Artificial Analysis)](https://www.youtube.com/watch?v=prGP0huECPo) | 全文 (agent 摘要，2026-11) |

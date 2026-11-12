@@ -99,7 +99,7 @@ jobs:
 
 ### 免人審與 merge 條件
 
-- Robinhood data pipeline PR：AI 讓 PR 變便宜，但有 context 判斷可否 merge 的人沒增加，CI 綠不等於安全 (@01:01) [Joshi]。
+- Robinhood data pipeline PR：AI 讓 PR 變便宜，但有 context 判斷可否 merge 的人沒增加，CI 綠不等於安全 (@01:01) [Joshi]。人機分工與搜尋範圍的誠實原則見 [harness-engineering.md](harness-engineering.md)，人工回饋迴圈見 [agent-evals.md](agent-evals.md)。
   - Layer 1 確定性檢查失敗直接讓 CI 紅燈：data contract（對 schema registry）、必要 tag（owner、PII 對 catalog）、lineage blast radius、performance（staging 以 production 量級 mock data 驗證 cluster 規模與 freshness SLA）(@06:00) [Joshi]。
   - Layer 2 是 agent review：針對特定行的 comment 附推理、風險分數、approve 或升級給人；merge 條件是 layer 1 全過且 review approve (@14:30) [Joshi]。
   - 反例：integer 改 big integer 通過所有 layer 1，agent 走 repo 找到一個 lineage 沒登記的 job，會把該欄寫進仍是 integer 的另一張表，大值出現時寫入失敗；agent 以高風險升級，人確認後先改下游表再 merge，沒有事故 (@12:00) [Joshi]。
@@ -123,6 +123,8 @@ jobs:
 - 講者稱「正確且完整」地給 agent 驗證自己工作的方法，品質可「兩到三倍」，是口語說法，無依據數據 (@09:00) [Osmani]。
 
 ### 大規模測試生成（Duolingo）
+
+試點方式、Temporal 上線架構與選檔加權見 [harness-engineering.md](harness-engineering.md)。
 
 - 瓶頸從寫程式轉到驗證，單元測試是 agent 的 guardrail 也是活文件；先挑最容易測的 MVVM 層（repository、view model、data source）。8 個月內整體覆蓋率 11% 到 24%，MVVM 切片 9% 到 59% (@01:00) [Agrawal]。
 - PR 生命週期是狀態機，每數小時掃一次，每個 PR 只做一個動作：衝突或開超過約 3 週就關閉；CI 跑中或已有 reviewer 就跳過；綠燈無 reviewer 就指派；紅燈就修；被 reject 的檔案進 30 天 cool down (@07:30) [Agrawal]。

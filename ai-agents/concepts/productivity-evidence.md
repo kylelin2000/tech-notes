@@ -47,7 +47,7 @@
 
 以下全部來自 AI Engineer 演講，資料性質各異，逐點標明。它們不是隨機對照，不要與 METR RCT 並列成同等證據。
 
-- 觀察性大樣本（Jellyfish，量測工具商）：約 50,000 位工程師、447 家公司、今年 Cursor 與 Claude Code 使用者，指標是每週每人 merged PR，不含品質指標 (@04:04) [Arcolano]。
+- 觀察性大樣本（Jellyfish，量測工具商）：約 50,000 位工程師、447 家公司、今年 Cursor 與 Claude Code 使用者，指標是每週每人 merged PR，不含品質指標 (@04:04) [Arcolano]。skill 使用量與 PR 產出的關係見 [harness-engineering.md](harness-engineering.md)。
   - 自然實驗：Cursor 在 UI 與 auto mode 把大量使用者導向 Grok，模型份額大幅變動，但每位工程師的 merged PR 變化與 Grok 份額變化沒有統計相關 (@03:00) [Arcolano]。
   - 變異拆解：工具（harness 加模型）解釋不到 1%；使用得多好約 3%；使用量約 9%；工作環境（公司與團隊）約 12%；工程師個人最大塊 (@06:00) [Arcolano]。
   - Token 用量約 50 萬個 developer-week：更多 token 帶來更多產出但邊際遞減，第 90 百分位對中位數約 10 倍 token 換約 2 倍產出 (@10:01) [Arcolano]。
