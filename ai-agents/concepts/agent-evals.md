@@ -70,7 +70,8 @@
 ## 相關筆記
 
 - [harness-engineering.md](harness-engineering.md)：Harness 實作做法總覽與完整來源索引
-- [agent-security.md](agent-security.md)：沙箱、權限與憑證
+- [agent-security.md](agent-security.md)：沙箱、憑證、prompt injection、供應鏈與身分授權
+- [agent-observability.md](agent-observability.md)：trace 的 OTel 慣例與自架後端（trace 是 eval 的原料）
 
 ## 來源
 
