@@ -6,7 +6,7 @@
 
 核心定義：**agent 就是在 loop 中跑工具以達成目標的 LLM**，coding agent 的關鍵能力是「能執行自己寫的程式碼」。Willison 特別區分這與 vibe coding：vibe coding 是未經審查的原型程式碼，兩者不該混為一談。
 
-與本 repo 其他筆記的關係：「給 agent 自我驗證的工具」對應 [Prompt → Loop → Graph](prompt-to-graph.md) 裡的 Harness 層；本篇是在 Harness 與 Loop 之上，從使用者角度整理的實務習慣。
+與本 repo 其他筆記的關係：「給 agent 自我驗證的工具」對應 [Prompt → Context → Harness → Loop → Graph](prompt-to-graph.md) 裡的 Harness 層；本篇是在 Harness 與 Loop 之上，從使用者角度整理的實務習慣。
 
 ## 速查：常用 prompt 與做法
 
