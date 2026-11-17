@@ -127,7 +127,7 @@
 
 ### 講者經驗（非規格）
 
-- 講者經驗（非規格）：用遠端 MCP server 當全公司 skill 的 source of truth，由伺服器依角色與查詢套政策給出適合版本，內部用了約 6 個月，並提到 MCP 社群有 skills over MCP 工作小組、API 尚未定案 (@08:00)；選用 tools 而非 resources 送 skill，理由是 resources 的 client 支援不一，tools 幾乎處處可用 (@09:00)。[Wilinski]
+- 用遠端 MCP server 當全公司 skill 的 source of truth，由伺服器依角色與查詢套政策給出適合版本，內部用了約 6 個月，並提到 MCP 社群有 skills over MCP 工作小組、API 尚未定案 (@08:00)；選用 tools 而非 resources 送 skill，理由是 resources 的 client 支援不一，tools 幾乎處處可用 (@09:00)。[Wilinski]
 
 ## 官方 servers repo
 
@@ -181,7 +181,7 @@
 ## 相關筆記
 
 - [harness-engineering.md](harness-engineering.md#工具-tools-與-skills)：harness 層的工具取捨（tools、bash、code gen）與 skills。
-- [agent-security.md](agent-security.md)：沙箱、憑證、prompt injection 與身分授權，與本篇 MCP 授權／token 邊界互補。
+- [agent-security.md](agent-security.md)：沙箱、憑證、權限、prompt injection 與身分授權，與本篇 MCP 授權／token 邊界互補。
 - [../../work-experience/hermes-agent.md](../../work-experience/hermes-agent.md)：Hermes 的 Tool Broker 就是一個 MCP server，持有憑證並作為內部資源的單一出口。
 
 ## 來源

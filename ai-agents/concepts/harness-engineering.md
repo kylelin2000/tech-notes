@@ -11,13 +11,13 @@
 
 ## 定義與基本觀念
 
-> 本章重點（本筆記歸納）：Harness 是模型以外的一切，並與模型共同演化；各家第一方的定義已趨同為「模型加上一套統一的 harness」。
+> 本章重點（本筆記歸納）：Harness 是模型以外的一切，並與模型共同演化；Codex 與 Google 的第一方定義已趨同為「模型加上一套統一的 harness」。
 
 - Harness = Agent 去掉模型後剩下的全部（loop、tools、context 管理、guardrails、memory、驗證、沙箱、觀測）。[Chambers] [Martinez] [Kumar]
 - 容易混淆：ML 領域的 "eval harness" (lm-eval-harness) 是測試框架，與 agent harness 不同。[Kumar]
 - Harness 不等於 agent loop，是包在 loop 外面的東西，甚至可以是 loop 外面再一層 loop。[Kumar]
 - 為什麼要有：模型是租來的黑盒，會被換版、context 受限、行為不穩；harness 提供可靠性與控制，讓便宜或舊模型也能做事（GPT-3.5 示範，全程沒改 prompt）。[Kumar] [Martinez]
-- 兩種 agent：我們使用的（Claude Code、Cursor、Kiro；harness 是 memory，skills，MCP，團隊標準）與我們建造的（還需要 loop 管理、擴展、身分、付款、執行環境、可觀測與評估）。[Chambers]
+- 兩種 agent：我們使用的（Claude Code、Cursor、Kiro；harness 是 memory、skills、MCP、團隊標準）與我們建造的（還需要 loop 管理、擴展、身分、付款、執行環境、可觀測與評估）。[Chambers]
 - 抽象層級演進：Messages API（自己寫 loop） → Agent SDK（打包 Claude Code harness） → Managed Agents（連同託管基礎設施一起給）。[Bhat&He] [L.Martin]
 - Harness 也是一個「共同演化」的東西：模型釋出時常伴隨 harness 變更，模型訓練時就包含自家 harness（apply_patch，bash 引號語意）。[Prabaker] [Lopopolo] [Horthy-SF]
 - 類比：模型是處理器，agent runtime 是作業系統，skills 是應用層。核心 scaffolding 可以薄到只剩 bash + 檔案系統，缺的是領域專業，所以「別再為每個領域重建 agent，改建 skills」。[Zhang&Murag]
@@ -78,7 +78,7 @@
 - Micro-agents：確定性 DAG 中嵌入 3 到 10 步的小 agent loop（部署機器人範例）。[Horthy-12F]
 - 控制論式 loop（取代盲目 Ralph loop）：sensor (ast-grep, ESLint, grep) → setpoint → controller（確定性挑下一個小項） → actuator agent（搭配手寫 golden patterns skill） → 重新量測；一次只改一小塊，讓 PR 可讀；用排程 GitHub Action 一次跑一輪。[Mistele]
 - Ralph loop：同一個 prompt 反覆餵給 CLI，每輪新 context；失敗要可預測。[Prabaker] [Mistele]
-- Event-sourced harness：state + 同步 reducer + after-append hook；一切（串流 chunk，tool call，錯誤，circuit breaker）都是 append-only 事件；重啟時只重播 reducer，不重打 LLM。[Templestein]（部分）
+- Event-sourced harness：state + 同步 reducer + after-append hook；一切（串流 chunk、tool call、錯誤、circuit breaker）都是 append-only 事件；重啟時只重播 reducer，不重打 LLM。[Templestein]（部分）
 - 長期目標：持續注入 continuation prompt 直到模型呼叫 update-goal 工具；目標要具體可驗證，不要寫長文。[Kundel]
 - 子 agent 作法：spawn / send-input / wait / close 工具；背景 terminal 工具；子 agent 就是一般函式當工具，可把不相干工具分組。[Kundel] [Bhargava]
 - 工具參數鎖定 (partial application)：先把目錄等參數綁死，模型看不到該參數，兼顧安全與自主。[Bhargava]
@@ -97,7 +97,7 @@
 - Plan 由誰持有（Alyx 的演進）：to-do list 當工具給模型，結果模型大半時間在更新清單（20 次以上 to-do 呼叫沒有實質工作），多次 tool call 後還會失焦；改為 harness 每次呼叫都把 plan 當 message 渲染，連 in-progress 標記後來也拿掉（未完成項依序就是下一步），現正測試完全不用 to-do tool，由 harness 管狀態與完成檢查 (@07:00)。[F.Ali]
 - 結束 turn 用明確的 finish 呼叫：「沒有 tool call 的文字就是完成」在「這輪宣告步驟、下輪才呼叫」的模型上會壞；改為 finish 呼叫，plan 有未完成項時最多退回三次，迭代上限前一步發警告，最後 force finish。使用者可自選 provider，無法逐一測過，所以要對齊所有可能行為 (@08:01)。[F.Ali]
 - 外層 DAG 保持確定性、節點內的 loop 保持自適應 (@16:00)（例：code review 做、檢查、依回饋修、夠好才放行，@05:30）；LangGraph 可管有環圖的 state (@04:00)。把 DAG state 注入 agent context，讓它知道自己在整體流程中的位置 (@10:00)。判斷哪個節點適合交給 agent：能否對照 policy 檢查、放進有界 loop、trace、fallback 到人類 (@13:00)。[Kormos]
-- 單 agent 的三種失敗：[Avilla]
+- 單 agent 的失敗與 fan-out 的取捨：[Avilla]
   - agentic laziness（看過 35 個服務健康就推論其餘也沒事）、self-preferential bias、goal drift（compact 後「不要動 production」這類限制可能被遺失）(@72:01 到 @76:01)。
   - fan-out 解法是每個 agent 只負責一小塊（50 個服務各一個），每個 reviewer 在獨立 context 做 adversarial review。
   - 代價是花費明顯高於單 agent，單 agent 30 秒能做完的事不適合；可分階段配模型與數量（scan 用 Haiku 每 ticker 兩個，review 用較強模型兩三個）(@27:01 到 @29:01)。
@@ -144,7 +144,7 @@
 
 - 工具設計：工具輸出就是 JSON，給模型熟悉的形狀；原生工具如 apply_patch，shell，ripgrep；以程式碼執行（持久 REPL + Playwright JS）取代一次一動作的 computer use。[Kundel]
 - 範例：browser session 用純 Playwright 而非 MCP。[Kumar]
-- MCP 負責 agent 對外，ACP 負責 client 對 harness：JSON-RPC、session、權限請求、可擴充方法；client，harness，tools，model 四者可分別放在不同位置。[Hancock]
+- MCP 負責 agent 對外，ACP 負責 client 對 harness：JSON-RPC、session、權限請求、可擴充方法；client、harness、tools、model 四者可分別放在不同位置。[Hancock]
 - Code Mode（[Pai]，部分）：harness 的重點不只是產生程式碼，還要有一個安全的執行空間，並只在其中暴露受控的能力。
 - Gateway：每個沙箱一個 MCP gateway 端點，集中控制工具/資源/prompt，harness 可替換。[Clark]
 - 工具的問題：描述模糊、模型卡住時無法修改、永遠佔用 context。改法是寫成 skill 裡的 script（Claude 一直重寫同一段套投影片樣式的 Python，就讓它存進 skill，之後直接執行）。[Zhang&Murag]
@@ -162,7 +162,7 @@
 - SKILL.md 小於 500 行；人寫的優於 AI 生成；移除 no-op 指示；能寫成腳本就別寫成 skill。[Schmid-Evals]
 - 不要把文件整份轉成 skill：10,000 行自動生成 skill 使任務正確率 97% 掉到 77%；改為 553 行手寫 "gotchas" 後 eval 時間 68 分降到 6 分。[Nisi]
 - Skill 的類型：capability（模型進步後可退役）與 preference（長期保留並用 eval 保護）。[Schmid-Evals]
-- 超過 10 個 skill 要檢索/embedding 做 shortlist；超過 100 個要治理（admission，ownership，boundaries，lifecycle/semver，定期審計）。[Miraje]
+- 超過 10 個 skill 要檢索/embedding 做 shortlist；超過 100 個要治理（admission、ownership、boundaries、lifecycle/semver、定期審計）。[Miraje]
 - Skill 當作 harness 的延伸而不是打包的 prompt：子 agent 對立審查、隨機種子腳本、stdout 輸出指示、hooks、記憶（存在 repo 的忽略資料夾），針對最弱模型設計。[Bakaus]（部分）
 - 注意跨 harness 差異（如 Codex 需要使用者明確授權才會開 subagent）。[Bakaus]
 - 在 harness 內放入使用者自訂 agent 檔 (AGENTS.md + skills) 而不是寫 Python 工具；以檔案擴充能力。[Schmid-NoCode]
@@ -177,7 +177,7 @@
   - 成功且有意義的 run，把 trace 交給 frontier 模型蒸餾成 skill；失敗 run 訊號更豐富，能補上缺少的 guardrail 與邊界情況 (@11:30)。
   - 長任務下初始軌跡決定成敗，skill 用來縮小搜尋空間 (@03:30)；最值得寫的是沒人想重新發現的儀式（回滾腳本與 feature flag 順序、對流失客戶的措辭）(@04:30)。
   - 論點是 frontier 智慧是租來的，把程序持久化成自己的資產也是不換模型就降成本的方法 (@14:30)。
-  - 單一案例，講者為 MCP gateway 廠商。
+  - 註：單一案例，講者為 MCP gateway 廠商。
 - 使用量數據：控制其他因素下，每週 30 次以上 skill 使用帶來約 30% 的 PR 產出提升，效果大於換模型；同一人換模型家族、Cursor 換 Claude Code、autocomplete 換 agentic 模式，PR 產出變化在統計上都不明顯 (@07:10, @08:02)。9 月時約半數工程師週幾乎沒用 skills，只有 12% 達到高使用量。講者公司販售量測工具；同一份資料的其他產出數據見 [productivity-evidence.md](productivity-evidence.md)。[Arcolano]
 
 ## 驗證，Evaluator 與品質關卡
@@ -188,7 +188,7 @@
 - Planner / Generator / Evaluator（GAN 式）：planner 只寫高層 spec（細節錯誤會級聯放大）；generator 與 evaluator 先協商 sprint contract（何謂完成，可測）；evaluator 要真的操作應用（Playwright，試玩）。卡住時整個丟掉重來而不是持續補丁。代價：慢且貴（範例約 US$200，6 小時）。[Prabaker]
 - 確定性驗證：讀 tool-call 歷史判斷 agent 有沒有說謊（點了按鈕不代表成功，登入失敗要回報失敗）。[Kumar]
 - 防作弊：agent 會 touch 一個標記檔假裝測過，改為把真實測試輸出做 SHA-256 存入並驗證；要求非程式證據（Playwright 錄影前後對照）；原則是讓做真的比說謊更容易。[Nisi]
-- 靜態規則轉成 prompt：自訂 lint 與結構測試（package 隱私，層級依賴，zod schema 去重，fetch 必須帶 timeout 與 retry），且錯誤訊息要寫成補救指示，這是「在對的時間注入指示」。[Lopopolo]
+- 靜態規則轉成 prompt：自訂 lint 與結構測試（package 隱私、層級依賴、zod schema 去重、fetch 必須帶 timeout 與 retry），且錯誤訊息要寫成補救指示，這是「在對的時間注入指示」。[Lopopolo]
 - 各人設（前端架構、可靠性、擴展性）各建一個 review agent，每次 push 在 CI 跑，依文件回報 P2 以上阻擋項。[Lopopolo]
 - Hooks：在每次編輯觸發 lint 並阻擋寫入，而不是事後抱怨。「若關卡可以被跳過，就會被跳過。」[Bakaus]
 - 規劃勝於事後審查：產品審查 → 系統架構 → program design（型別、簽名、call graph） → 垂直切片；30 分鐘對齊省數小時審查。[Horthy-SF]
@@ -211,7 +211,7 @@
   - 成功截圖不等於證明，要確認真的從頭走過 UI 可到達的路徑 (@31:15)。
   - 保留每次 run 的 receipts 夜間彙整失敗讓 agent 發 PR，PR 附操作錄影 (@50:30)。
   - 給目標與確認指令而不是路徑，過度規定可能降低表現 (@33:30)。
-- 三種職責三種負責者：[Joshi]
+- 職責分工、誠實回報搜尋範圍與設計教訓：[Joshi]
   - scripts 證明可證明的事實、agent 判斷需要 context 的事、人負責只有人該決定的事；source of truth 能回答的問題不交給 AI，也同時壓低成本 (@03:00)。
   - 要求 agent 誠實承認搜尋範圍：沒找到不等於不存在，只能說「在搜尋過的地方沒找到」，不得宣告 all clear (@14:02)；PR 描述的意圖不能抵銷程式碼中的發現 (@10:30)。
   - 講者自承設計錯誤：兩層檢查獨立平行觸發，彼此看不到對方結果或故障，一邊故障就等人、沒有 fallback；提案（未實作）改為單一入口 classifier (@24:01)；分層 merge 條件見 [coding-agent-ci.md](coding-agent-ci.md)，人工回饋迴圈見 [agent-evals.md](agent-evals.md)。
@@ -257,7 +257,7 @@
 - 觀測先於一切：「observability 與 evals 要最先考慮」；觀測也是持續改進的基底。[Chambers] [Trivedy]
 - 長程 loop 的耐久性：串流中斷後可續跑，持久化 thread，queue/steer/interrupt。[Bhagwat]
 - 傳輸優化：當推論達 1000 token/s，瓶頸變成網路；websocket 模式只傳增量。[Kundel]
-- 元件各自擴展而非全塞進一個容器（memory，loop，identity 獨立擴展）。[Chambers]
+- 元件各自擴展而非全塞進一個容器（memory、loop、identity 獨立擴展）。[Chambers]
 - 透過標準協定讓前端可替換 (ACP)。[Hancock]
 - Durable execution 的切法：agent loop 放 workflow（確定性），模型與工具呼叫放 activity（非確定性）；worker 被殺掉後重播事件日誌（不重做）回到上次位置。可與 [Templestein] 的 event-sourced harness 對照。[Warrick]
 - 結構化 handoff：worker 交接時填「完成了什麼、沒完成什麼、跑了哪些指令與 exit code、發現的問題」，讓錯誤在 milestone 邊界被抓出來，而不是「希望 agent 記得」。[Alvoeiro]
@@ -295,18 +295,18 @@
 - 瓶頸理論：先修最大的瓶頸（審查、發佈），否則 AI 反而讓部分團隊變慢；協調問題可能其實是團隊太大。AI 產出變 2 到 3 倍後，團隊協作方式必須重整（Horthy 的三人團隊花了八週）。[Parsons] [Horthy-NV]
 - 歸責：Git 一個 commit 只有一位 signer，agent 的行為最終必須能歸因到人。[LoopsDebate]
 - AGENTS.md 當成 agent 的工作守則：分層、scoped AGENTS.md、程式碼地圖與 anti-patterns，並明定 agent 與人類維護者的授權邊界（例：自動化流程不得合併或關閉 PR / issue，不得直接 push main）。[OpenClaw-repo] [ClawCode]
-- Software factory 的三個指標有順序：[Knox]
+- Software factory 的指標順序、control plane 與難處：[Knox]
   - autonomy（要多少人類修正）、automation（能跑多久、要多少審查與信任才接受）、final quality；可以高 autonomy 低 automation，例如 agent 常一次做對你仍逐行審 (@03:00 到 @04:01)。
   - 三層中先做 control plane：所有工作從 issue tracker 開始，交給 sandbox 內的 headless agent，agent 開 PR，工程師在 PR 留言，讓所有接觸點可被後續工具讀取 (@11:00)；多數時間花在 improvement loops：每日或每週掃 codebase、常見開發 playbook、辨識重複任務並自動化、把學到的修正灌回 skill (@14:00)。
   - 難處：舊最佳實務幾週後可能變反模式、是計畫外工作與出貨競爭、所需資訊藏在本機 agent log 或個人腦中 (@09:01)。
-  - 講者公司後段有產品介紹。
+  - 註：講者公司後段有產品介紹。
 - 顧問觀點的流程重設計：[Harrysson]
   - 單純在原流程加工具沒用；迭代從兩週 sprint 轉向一到兩天的 Kanban 式，agent 夜間跑、人隔天驗證再重跑 (@05:01)。
   - 人類 review 逐步放手：先決定哪裡要人看，信心夠了就拿掉那一關 (@06:01)。
   - build 與 test 壓縮後瓶頸移到上游需求撰寫與下游 release 頻率，橫向的合規、風險、設計規範需編碼給 agent (@14:00)。
   - 為 agent 準備 golden examples 而非 codebase 平均水準 (@11:30)。
   - Skills 的問題是 curation：寫 PRD 一件事就能下載約 1,700 個 skills，造成選擇癱瘓 (@10:01)。
-  - 講者無公開數據來源與方法。
+  - 註：講者無公開數據來源與方法。
 - 先做最小本機驗證再上線（Duolingo 寫測試 agent）：[Agrawal]
   - 一個 Claude Code command 當 orchestrator（跑 Xcode coverage、選檔腳本、兩個 subagent 寫測試與開 PR），兩批共 57 個 PR 合併 27 個（約 50%），目的是觀察失敗模式 (@04:01)。
   - 對策：XCTest 與 Swift Testing 混用（寫明何時用哪個）、巨大 singleton 難 mock（改 protocol 版並加 lint 規則強制）、flaky 的 concurrency 測試（規則與範例寫進 testing skill），改善 codebase 同時讓人與 agent 都更好測 (@04:30)。
@@ -361,7 +361,7 @@
   - 成本事故：月初收到約 100 美元的預算警示（平常一週的五倍），Codex 把 unit test 接到 production inference，一天跑約 30 輪；且每日自我反思 agent 產出是空的，因為重構弄壞了 prompt 管線 (@06:01)。
   - 重來時改寫新 spec 加 rubric，用四個框架（Claude Agent SDK、Codex、Copilot CLI、Pi）做 bake-off，並讓 Claude 與 Codex 互相多輪對抗式 review (@08:00, @18:01)。
   - 讀了 code 之後講者仍維持「不讀 code」的立場，只是改變做法 (@18:01)。
-  - 個人專案經驗。
+  - 註：個人專案經驗。
 
 ### 意見分歧
 
@@ -372,7 +372,8 @@
 - 編排放在 code 還是 prompt：[Nisi] 用 TypeScript state machine「enforce with code, not prompts」；Factory 把編排寫在 prompt 與 skills、確定性邏輯極薄，讓系統隨模型進步 [Alvoeiro]。
 - 平行還是序列：Factory 刻意 serial [Alvoeiro]，Parsons 也主張先做單一 loop [Parsons]；Codex 與 Cursor 則大量平行 subagent 與 cloud agent，前提是先切好範圍避免衝突 [Codex-MC] [Zakariasson]。
 - Loop 的實效（Great Loops Debate）：正方 Huntley、Livingstone 認為方向不可逆、軟體越可驗證越適合 loop；反方 Horthy、Pstrucha 認為炒作跑在紀律前面，仍要讀 code、往下一層抽象而不是往上。雙方共識：loop 在可驗證的任務上有效，架構判斷、成本、安全與歸責仍未解。[LoopsDebate]
-- Spec 的角色：Pocock 反對 specs-to-code（只改 spec 不看 code 等於 vibe coding）[Pocock]；Horthy 認為「spec-driven」一詞已失去定義 [Horthy-NV]；Parsons 偏好 just-in-time spec，避免回到瀑布 [Parsons]；Factory 則在寫 code 前先寫 validation contract [Alvoeiro]。 SDD 的工具與評析見 [spec-driven-development.md](spec-driven-development.md)。
+- Spec 的角色：Pocock 反對 specs-to-code（只改 spec 不看 code 等於 vibe coding）[Pocock]；Horthy 認為「spec-driven」一詞已失去定義 [Horthy-NV]；Parsons 偏好 just-in-time spec，避免回到瀑布 [Parsons]；Factory 則在寫 code 前先寫 validation contract [Alvoeiro]。
+- SDD 的工具與評析見 [spec-driven-development.md](spec-driven-development.md)。
 - 隔離層級：VM [Bichard] [Zakariasson]、git worktree + Docker [Pocock]、每任務一個 K8s pod [Solmaz]。
 - Harness 長期價值：「每次模型進步就刪掉」 [Schmid-NoCode] [Bhat&He] 與「harness 是限制因素」 [Bhat&He] [Bhargava] 並存，實務上是定期以 eval 重新審視。另一種看法是新模型上不同 harness 的分數已無顯著差異，但每題成本差異仍大，新領域反而要把 guardrail 加回來 [Katz]；Managed Agents 團隊也說 thick harness 與 thick skills 的邊界會變，誠實答案是每次換模型都要重跑 evals [CMA-3]。
 

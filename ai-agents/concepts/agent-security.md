@@ -1,4 +1,4 @@
-# Agent 安全：沙箱、憑證、prompt injection 與身分授權
+# Agent 安全：沙箱、憑證、權限、prompt injection 與身分授權
 
 本篇的「做法」一節從 [harness-engineering.md](harness-engineering.md) 的「沙箱，權限與安全」章節拆出，最初逐條照搬、之後獨立擴充；「Prompt injection 的系統性防禦」一節是後來新增（2026-10-14）。2026-11-12 補入 AI Engineer 頻道 2026-10 至 2026-11 上傳的新影片（由 Claude Sonnet 讀逐字稿摘要後併入，未逐支回看影片；內文的 (@mm:ss) 是影片時間點，依字幕標記估計，誤差約一分鐘）。內文的 `[簡稱]`（如 [Clark]）對應文末「來源」表；本篇來源表即完整索引。
 

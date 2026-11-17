@@ -50,7 +50,7 @@
 
 全指南最硬核的部分。
 
-- **`Use red/green TDD`**：四個詞換來 test-first。先看測試失敗（red）再實作（green），防住「程式碼不能動」和「寫了沒人用」兩大風險。
+- **`Use red/green TDD`**：一句話換來 test-first。先看測試失敗（red）再實作（green），防住「程式碼不能動」和「寫了沒人用」兩大風險。
 - **`First run the tests`**：每個新 session 開場先說這句。
 - **永遠不要假設沒執行過的程式碼能動**。測試通過不代表能用，還要 manual testing：`python -c` 試邊界情況、`curl` 探索 API、Playwright／Rodney 瀏覽器自動化（讓 agent 看截圖判斷 UI）。
 - **Showboat**：讓 agent 把測試過程寫成文件，`exec` 記錄「指令＋真實輸出」，防止 agent 造假。測試中發現的 bug 就地用 TDD 修，順便補進永久測試。
