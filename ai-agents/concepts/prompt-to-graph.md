@@ -102,7 +102,7 @@ Anthropic 2025-09 的 [Effective context engineering for AI agents](https://www.
 - 主迴圈雖單行程，搜尋與寫入階段可派出大量 subagent，但 build / test 驗證只收斂為一個。
 - 作者自述："deterministically bad in an undeterministic world"；"Ralph gets tuned - like a guitar"，靠看 stream 找壞模式來調 prompt。
 
-「Loop Engineering」作為詞語，2026 年 6–8 月有大量中英文媒體報導與技術彙整（例如 [Analytics Vidhya 的 Harness vs Loop vs Graph 指南](https://www.analyticsvidhya.com/blog/2026/08/agent-harness-loop-graph-engineering/)），可見它在 2026 年中已成主流論述；最早出處仍待查（線索：二手報導稱 Steinberger 的貼文與 Addy Osmani 的文章同在 2026-06-07 帶起此詞，未核對原文）。
+「Loop Engineering」作為詞語，2026 年 6–8 月有大量中英文媒體報導與技術彙整（例如 [Analytics Vidhya 的 Harness vs Loop vs Graph 指南](https://www.analyticsvidhya.com/blog/2026/08/agent-harness-loop-graph-engineering/)），可見它在 2026 年中已成主流論述；最早出處仍待查（線索：二手報導（具體篇目未列，待補）稱 Steinberger 的貼文與 Addy Osmani 的文章同在 2026-06-07 帶起此詞，未核對原文）。
 
 人的位置：調度者與調校者，設定目標與 gate，看輸出調 prompt。
 
@@ -121,7 +121,7 @@ Anthropic 2025-09 的 [Effective context engineering for AI agents](https://www.
 ### 2026 年的命名與論述
 
 - 2026-07-18：Peter Steinberger 在 X 上問 "Are we still talking loops or did we shift to graphs yet?" 引發論戰。
-- 約四個半小時後：Hamel Husain 以 X Article 發表〈Loop Engineering Is Dead. Enter Graph Engineering.〉（[TDS 事件記錄](https://towardsdatascience.com/graph-engineering-for-ai-agents-from-prompts-and-loops-to-workflows/)）。
+- 約四個半小時後：Hamel Husain 以 X Article 發表（時間差與形式依多篇二手報導，具體篇目未列，待補）〈Loop Engineering Is Dead. Enter Graph Engineering.〉（[TDS 事件記錄](https://towardsdatascience.com/graph-engineering-for-ai-agents-from-prompts-and-loops-to-workflows/)）。
 - 2026-08-21：系統性綜述 [arXiv:2608.21156](https://arxiv.org/abs/2608.21156)（*Graph Engineering in the Era of LLM Agents: From Individual Intelligence to System Intelligence*），其摘要正以 Prompt / Context / Harness / Loop / Graph Engineering 排出本篇同一條鏈。
 - 2026-11 Neo4j 的 Blumenfeld 在 AI Engineer 上定義 graph engineering 為把 agent 工作設計成明確的圖（node 做事、edge 傳 state），並自承名稱是新的、機制（state machine、workflow graph、knowledge graph）不新；他分執行圖、context graph、procedural graph（把 skill 的步驟與決策寫成圖，由程式而非 agent 決定路由）三種，後兩者是他的重點，案例為自家產品、證據薄弱 (@01:00, @15:00)。
 
@@ -166,7 +166,7 @@ Prompt 管怎麼表達任務；Context 決定讓模型看見什麼；Harness 接
 
 - 已驗證日期：RAG 2020-05-22、CoT 2022-01-28、ReAct 2022-10-06、Function Calling 2023-06-13、Weng 2023-06-23、LangGraph 官方發布 2024-01-17、Anthropic Building Effective Agents 2024-12-19、Huyen 2025-01-07、MAST 2025-03（由 arXiv ID 2503.13657 推得；v3 為 2025-10-26）、Cognition 2025-06-12、Anthropic multi-agent 2025-06-13、Willison 2025-06-27、Ralph 2025-07-14、Context Rot 2025-07-14、Anthropic context engineering 2025-09-29、Anthropic harnesses 2025-11-26、X 論戰起點 2026-07-18（由 X snowflake ID 反推，UTC）、Graph Engineering 綜述 2026-08-21。
 - 命名時間屬社群論述、敘事框架，不是學術斷代。Graph Engineering 的論戰與綜述已可舉證（見 §6）；Loop / Harness 作為詞語的最早出處仍未能獨立驗證。
-- Steinberger 提問與 Husain 文章的先後（2026-07-18，相隔約四個半小時）已由多篇二手報導交叉確認（2026-11-17 查）。尚未獨立核實：Husain 文章全文、TDS 文章全文、arXiv 摘要全文；引用前建議回原文確認。
+- Steinberger 提問與 Husain 文章的先後（2026-07-18，相隔約四個半小時）已由多篇二手報導交叉確認（2026-11-17 查；具體篇目未留存，待補連結）。尚未獨立核實：Husain 文章全文、TDS 文章全文、arXiv 摘要全文；引用前建議回原文確認。
 
 ## 核心來源
 
