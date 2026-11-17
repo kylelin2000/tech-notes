@@ -133,7 +133,7 @@
 - Context 修剪的 bug 很難抓：Claude Code 為了配合 prompt cache 過期，在閒置 session 清除舊 thinking，本應只做一次卻變成每回合都清，agent 因此健忘、重複，還造成 cache miss 與用量暴增。修剪邏輯要測「閒置後恢復」「工具執行中途追問」這類邊界情況。[Anthropic-PM]
 - 大量 tool 輸出（如 log）會撐爆 context，造成 overflow、hallucination、recall 下降；加大視窗不是解法，注意力曲線只記得開頭和結尾（lost in the middle）(@02:01)。技巧分四類：externalize（搬到外部儲存，用 memory pointer）、select、compress、isolate (@03:00)。Conversation manager 有 sliding window、summarization、兩者結合三種（示範摘要比例 50%、保留最近 4 則）(@04:01)。Anti-patterns：context stuffing、天真的 summarization（可能丟掉答案需要的資訊）、context pollution (@13:00)。Multi-agent swarm 共享整個 context 等於把垃圾灌給其他 agent，改在 agent 間只傳 memory pointer (@10:00)。[Leone]
 - Trajectory 超過視窗時，harness 要求模型先寫 checkpoint 再丟掉被取代的內容，歷史有固定 token 預算 (@11:01)。[F.Ali]
-- Sub agent 不是萬靈丹：每個 subagent 仍需完整 context，環境 token 與延遲都重，所以要預建索引避免重複處理文件 (@07:00)。企業文件搜尋上線要考慮多租戶、從 Google Drive / SharePoint 抓權限 metadata 而不整批重索引、資料新鮮度 (@15:01)。[G.He]
+- Subagent 不是萬靈丹：每個 subagent 仍需完整 context，環境 token 與延遲都重，所以要預建索引避免重複處理文件 (@07:00)。企業文件搜尋上線要考慮多租戶、從 Google Drive / SharePoint 抓權限 metadata 而不整批重索引、資料新鮮度 (@15:01)。[G.He]
 - Context 太多會 overexplore（產生不存在的假設），太少會 underexplore，telemetry 又近乎無限，所以重點是「解題所需的精確 context 量」而非選哪種 RAG 實作 (@09:02, @13:01)。[Krovvidi]
 
 ## 工具 (Tools) 與 Skills
@@ -266,10 +266,10 @@
 - Telemetry in the loop：harness 知道哪裡壞了、花了多少，就能自我修正後繼續。[Koc]
 - Model-visible ⟺ logged：任何進入 model request 的內容都必須能從 session log 重建，新增 model 可見的輸入就要新增 session event；已發佈的 session 格式只能加新版本，不得覆寫或刪除。可與 [Templestein] [Warrick] 的事件日誌對照。[DeepSeek-H]
 - 每項狀態只有一個 owner，caller 只消費 owner 記錄的事實，快取與 projection 由 owner 衍生並有明確失效週期；SQLite 存取走 worker thread（多讀、單一寫入 broker），不在主執行緒做。對應 [Govindarajan] 的單一寫入者。[OpenClaw-repo]
-- Brain / hands / session 解耦：第一版把 session log、harness、sandbox 塞同一個容器，變成 pet（壞了手工救；掉封包與容器死亡症狀相似難 debug；客戶資料在容器內無法查；連客戶 VPC 內的 MCP 要 network peering）(@05:00 到 @07:01)。改版為 session（append-only 事件 log）、brain（harness + Claude）、hands（sandbox、MCP tool call，隨需建立、用完即丟）：sandbox 掛了對 Claude 只是一次失敗的 tool call，harness 掛了換新的並從最後一個事件接續，只有 session log 需要保護 (@08:01)。不必等 sandbox 啟動就能先開始 inference，time to first token 降約 90%（講者口述；agent-security.md 依 [Bhat&He] 記為 p50 降 60%、p95 降超過 90%）(@10:00)。[CMA-1]
-- Sub agent 是分散式系統：[Konda]
+- Brain / hands / session 解耦：第一版把 session log、harness、sandbox 塞同一個容器，變成 pet（壞了手工救；掉封包與容器死亡症狀相似難 debug；客戶資料在容器內無法查；連客戶 VPC 內的 MCP 要 network peering）(@05:00 到 @07:01)。改版為 session（append-only 事件 log）、brain（harness + Claude）、hands（sandbox、MCP tool call，隨需建立、用完即丟）：sandbox 掛了對 Claude 只是一次失敗的 tool call，harness 掛了換新的並從最後一個事件接續，只有 session log 需要保護 (@08:01)。不必等 sandbox 啟動就能先開始 inference，time to first token 降約 90%（講者口述；agent-security.md 依 [Bhat&He]、[L.Martin] 記為 p50 降 60%、p95 降超過 90%；講者說的可能是 p95，待回原片確認）(@10:00)。[CMA-1]
+- Subagent 是分散式系統：[Konda]
   - orchestrator + workers + 共享可變狀態 + 併發結果合併，失敗模式有 partial failure、dirty read、unbounded fanout、retry 重跑整個任務連 side effect (@01:01)。
-  - Sub agent 做一半不丟 exception，而是回型別與成功相同的流暢文字，orchestrator 讀得到結論，讀不到背後做了多少工 (@04:01)。
+  - Subagent 做一半不丟 exception，而是回型別與成功相同的流暢文字，orchestrator 讀得到結論，讀不到背後做了多少工 (@04:01)。
   - 逾時只是「懷疑」不是事實：記成 unknown 並保留真正原因，例如首次啟動要下載的 server 被 30 秒 timeout 誤判（給 initialize 獨立 timeout）、server 崩潰時 timeout 覆蓋 exit code (@05:00)。
   - 讓失敗成為值：回傳結構化狀態（做了什麼、沒做什麼、證據、side effects），「檢查後沒問題」和「無法檢查」要分開 (@06:01)。
 - SAFE 一致性模型（S、A、F、E 四項，此處只收 S 與 F）：[Konda]
@@ -503,7 +503,7 @@
 | L.Martin-Prompts | [Your Old Prompts Are Making Claude Worse, Lance Martin (Anthropic)](https://www.youtube.com/watch?v=ys6YQ2yfBpM) | 全文 (agent 摘要，2026-11) |
 | F.Ali | [We Kept Rebuilding Our AI Agent. Here's What Survived, Fuad Ali (Arize AI)](https://www.youtube.com/watch?v=YIhvrvHtonk) | 全文 (agent 摘要，2026-11) |
 | Knox | [Harness Engineering: How to Build a Software Factory, Dru Knox (Tessl)](https://www.youtube.com/watch?v=X6l4lpA0_NY) | 全文 (agent 摘要，2026-11，廠商性質) |
-| Harrysson | [What the Top Companies Do Differently With AI Coding, Martin Harrysson & Prakhar Dixit (McKinsey)](https://www.youtube.com/watch?v=21tuT-e4NVo) | 全文 (agent 摘要，2026-11) |
+| Harrysson | [What the Top Companies Do Differently With AI Coding, Martin Harrysson 與 Prakhar Dixit (McKinsey)](https://www.youtube.com/watch?v=21tuT-e4NVo) | 全文 (agent 摘要，2026-11) |
 | Avilla | [Why One AI Agent Isn't Enough (And How to Run 1,000), CJ Avilla & Harrison Stall (Anthropic)](https://www.youtube.com/watch?v=kiClTcJUnhc) | 全文 (agent 摘要，2026-11，廠商性質) |
 | Konda | [Your Sub-Agents Are a Distributed System. Treat Them Like One., Girish Konda (Microsoft)](https://www.youtube.com/watch?v=DxP5aW4VknQ) | 全文 (agent 摘要，2026-11) |
 | Joshi | [60% of Our Data PRs Now Merge With No Human Review, Chetas Joshi (Robinhood)](https://www.youtube.com/watch?v=MQiojLnK-E0) | 全文 (agent 摘要，2026-11) |

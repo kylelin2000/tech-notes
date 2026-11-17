@@ -64,7 +64,7 @@
 - 講者列的四個理由：漸進揭露、可組合性（串接、fan-out）、token 效率（程式裡裁切輸出）、emergent behavior（agent 自行造工具；例如移除記錄中的 PII，在 context 內做會洩漏信用卡號，寫程式處理則不會）(@04:00)。[M.King]
 - Arize 在 Phoenix 的演進：從 Bash 開始（sed、grep 加自家 CLI，輸出可存檔），加 Python sandbox，把 REST CRUD endpoint 提升成程式內可組合的 API，再加 SQL 做聚合（如 P95 latency 的 LLM span），避免逐頁翻 trace (@06:01)；也把 UI 操作做成 web worker 內的程式範式，雙向綁定瀏覽器 (@07:00)。[M.King]
 - 風險與營運成本（補充上面的代價）：LLM 產生的程式碼、sandbox 資源與 egress、secret 不可回到 context、權限常過寬 (@08:00)；除錯變成除錯程式碼、工具參數變程式碼因此準確度要求更高、discovery 多一步 handshake、MCP 與 harness 都做 code mode 會有雙重 sandbox 與重複的 JSON 序列化 (@09:02)。[M.King]
-- 未解問題：程式中途失敗無法從該步驟 resume；LLM 擅長寫 JavaScript，但 JavaScript 不利數值運算；圖片等二進位要用簽名 URL 之類方式交出 sandbox；小模型可能能力不足，講者稱 frontier 模型在 code mode 表現最好 (@10:01)。[M.King]
+- 未解問題：程式中途失敗無法從該步驟 resume；LLM 擅長寫 JavaScript，但 JavaScript 不利數學；圖片等二進位要用簽名 URL 之類方式交出 sandbox；小模型可能能力不足，講者稱 frontier 模型在 code mode 表現最好 (@10:01)。[M.King]
 
 ## 給 agent 用的 CLI
 
