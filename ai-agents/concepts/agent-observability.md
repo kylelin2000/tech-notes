@@ -13,16 +13,16 @@
 
 - GenAI span 代表呼叫端觀察到的邏輯操作，涵蓋從發起到收到完整回應（或錯誤、取消）；自動重試要算在同一個 span 內。[OTel-Spans]
 - 操作類型由 `gen_ai.operation.name` 決定，已定義值包括 `chat`、`generate_content`、`text_completion`、`embeddings`、`retrieval`、`execute_tool`、`create_agent`、`invoke_agent`、`invoke_workflow`、`plan`，以及一組 memory 相關操作（`create_memory`、`search_memory` 等）。[OTel-Spans]
-- Inference span（`gen_ai.client.inference`，Status Development）代表對模型或服務的一次呼叫，產生回應或要求 tool call。Span name 為 `{gen_ai.operation.name} {gen_ai.request.model}`，kind 為 `CLIENT`；呼叫同進程內的模型時可用 `INTERNAL`。必填屬性是 `gen_ai.operation.name`（如 `chat`）與 `gen_ai.provider.name`；`gen_ai.request.model`、`gen_ai.conversation.id`、`gen_ai.output.type`、`gen_ai.request.stream` 等為條件必填；建議屬性包括 `gen_ai.request.{max_tokens,temperature,top_p}`、`gen_ai.response.{id,model,finish_reasons}`、`gen_ai.usage.{input_tokens,output_tokens}`（另有 cache_read、cache_write、reasoning 與各 modality 的細分）。`gen_ai.input.messages`、`gen_ai.output.messages`、`gen_ai.system_instructions`、`gen_ai.tool.definitions` 為 Opt-In。[OTel-Inference]
+- Inference span（`gen_ai.client.inference`，Status Development）代表對模型或服務的一次呼叫，產生回應或要求 tool call。Span name 為 `{gen_ai.operation.name} {gen_ai.request.model}`，kind 為 `CLIENT`；呼叫同行程內的模型時可用 `INTERNAL`。必填屬性是 `gen_ai.operation.name`（如 `chat`）與 `gen_ai.provider.name`；`gen_ai.request.model`、`gen_ai.conversation.id`、`gen_ai.output.type`、`gen_ai.request.stream` 等為條件必填；建議屬性包括 `gen_ai.request.{max_tokens,temperature,top_p}`、`gen_ai.response.{id,model,finish_reasons}`、`gen_ai.usage.{input_tokens,output_tokens}`（另有 cache_read、cache_write、reasoning 與各 modality 的細分）。`gen_ai.input.messages`、`gen_ai.output.messages`、`gen_ai.system_instructions`、`gen_ai.tool.definitions` 為 Opt-In。[OTel-Inference]
 - 命名與 kind 規則：
 
 | Span | operation.name | Span name | Span kind |
 | --- | --- | --- | --- |
-| Inference | `chat`、`generate_content`、`text_completion` 等 | `{gen_ai.operation.name} {gen_ai.request.model}` | `CLIENT`（同進程可 `INTERNAL`） |
+| Inference | `chat`、`generate_content`、`text_completion` 等 | `{gen_ai.operation.name} {gen_ai.request.model}` | `CLIENT`（同行程可 `INTERNAL`） |
 | Embeddings | `embeddings` | `{gen_ai.operation.name} {gen_ai.request.model}` | `CLIENT` |
 | Create agent | `create_agent` | `create_agent {gen_ai.agent.name}` | `CLIENT` |
 | Invoke agent（遠端服務，如 OpenAI Assistants、Bedrock Agents） | `invoke_agent` | `invoke_agent {gen_ai.agent.name}`，無名稱時 `invoke_agent` | `CLIENT` |
-| Invoke agent（同進程，如 LangChain、CrewAI） | `invoke_agent` | 同上 | `INTERNAL` |
+| Invoke agent（同行程，如 LangChain、CrewAI） | `invoke_agent` | 同上 | `INTERNAL` |
 | Invoke workflow | `invoke_workflow` | `invoke_workflow {gen_ai.workflow.name}` | `INTERNAL` |
 | Plan | `plan` | `plan {gen_ai.agent.name}`，無名稱時 `plan` | `INTERNAL` |
 | Execute tool | `execute_tool` | `execute_tool {gen_ai.tool.name}` | `INTERNAL` |
