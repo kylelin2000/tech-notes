@@ -69,7 +69,7 @@ Reflection（[Reflexion](https://arxiv.org/abs/2303.11366)、[Self-Refine](https
 
 綜述也在整理這些部件（其中 Huyen 一篇晚至 2025 年）：[Weng（2023-06-23）](https://lilianweng.github.io/posts/2023-06-23-agent/)以 LLM 為大腦，配 planning（子目標拆解、反思）、memory（短期為 in-context learning、長期為外部向量庫）、tool use 三個元件，並列出有限 context、長程規劃、自然語言介面可靠性三項挑戰；[Huyen（2025-01-07）](https://huyenchip.com/2025/01/07/agents.html)則主張 agent 由其環境與可用工具定義，planning 應與執行解耦、先驗證計畫再執行，並把失敗分成 planning 失敗（無效工具、錯誤參數、目標未達）與 tool 失敗。
 
-公式（作者整理）：Agent = Model + Harness。Harness = 權重之外的一切：工具、執行環境、記憶、沙箱、驗證迴圈、權限邊界。
+公式（本筆記整理）：Agent = Model + Harness。Harness = 權重之外的一切：工具、執行環境、記憶、沙箱、驗證迴圈、權限邊界。
 
 「Harness」作為詞語，可舉證的官方用例是 Anthropic 2025-11 的 [Effective harnesses for long-running agents](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents)：用 initializer agent 建好環境、進度檔與 feature list，再讓 coding agent 逐 session 接力。概念成形在 2024，詞語主流化在 2025 後半，與 Context 的情形類似。
 
