@@ -131,7 +131,12 @@
 - Server-side 狀態：用 interaction ID 帶回 context，免去自行管理 thought signatures，也避免多一個空白就 cache miss。[Leo]
 - 為 prompt prefix cache 保持對話穩定：不重建過往 context，新增的 prompt / tool / context 要有界且確定，transcript bytes 不變，只有 compaction 可以改寫歷史；穩定 prompt 的變更延到下個 session 才生效。[OpenClaw-repo]
 - Context 修剪的 bug 很難抓：Claude Code 為了配合 prompt cache 過期，在閒置 session 清除舊 thinking，本應只做一次卻變成每回合都清，agent 因此健忘、重複，還造成 cache miss 與用量暴增。修剪邏輯要測「閒置後恢復」「工具執行中途追問」這類邊界情況。[Anthropic-PM]
-- 大量 tool 輸出（如 log）會撐爆 context，造成 overflow、hallucination、recall 下降；加大視窗不是解法，注意力曲線只記得開頭和結尾（lost in the middle）(@02:01)。技巧分四類：externalize（搬到外部儲存，用 memory pointer）、select、compress、isolate (@03:00)。Conversation manager 有 sliding window、summarization、兩者結合三種（示範摘要比例 50%、保留最近 4 則）(@04:01)。Anti-patterns：context stuffing、天真的 summarization（可能丟掉答案需要的資訊）、context pollution (@13:00)。Multi-agent swarm 共享整個 context 等於把垃圾灌給其他 agent，改在 agent 間只傳 memory pointer (@10:00)。[Leone]
+- 大量 tool 輸出的 context 管理：[Leone]
+  - 大量 tool 輸出（如 log）會撐爆 context，造成 overflow、hallucination、recall 下降；加大視窗不是解法，注意力曲線只記得開頭和結尾（lost in the middle）(@02:01)。
+  - 技巧分四類：externalize（搬到外部儲存，用 memory pointer）、select、compress、isolate (@03:00)。
+  - Conversation manager 有 sliding window、summarization、兩者結合三種（示範摘要比例 50%、保留最近 4 則）(@04:01)。
+  - Anti-patterns：context stuffing、天真的 summarization（可能丟掉答案需要的資訊）、context pollution (@13:00)。
+  - Multi-agent swarm 共享整個 context 等於把垃圾灌給其他 agent，改在 agent 間只傳 memory pointer (@10:00)。
 - Trajectory 超過視窗時，harness 要求模型先寫 checkpoint 再丟掉被取代的內容，歷史有固定 token 預算 (@11:01)。[F.Ali]
 - Subagent 不是萬靈丹：每個 subagent 仍需完整 context，環境 token 與延遲都重，所以要預建索引避免重複處理文件 (@07:00)。企業文件搜尋上線要考慮多租戶、從 Google Drive / SharePoint 抓權限 metadata 而不整批重索引、資料新鮮度 (@15:01)。[G.He]
 - Context 太多會 overexplore（產生不存在的假設），太少會 underexplore，telemetry 又近乎無限，所以重點是「解題所需的精確 context 量」而非選哪種 RAG 實作 (@09:02, @13:01)。[Krovvidi]
@@ -237,7 +242,11 @@
 - Continual learning：掃過去的 transcript，把使用者的糾正與偏好抽成 rules；merge 後 PR 上的人類 review comment 是高訊號資料。可與 [Nisi] 的 retro agent 對照。[Zakariasson]
 - 共享記憶的存取控制仍是未解問題；先用 markdown，Notion 之類內容轉成 markdown 讓 agent 直接讀，不走 MCP。[LoopsDebate]
 - 長期 memory 在實務中的收斂：試過 vector retrieval、episodic / semantic store、temporal knowledge graph，最後是每個使用者一個 markdown 檔（上限 8,000 字元），每個完整請求都載入，由 session 結束後的背景工作寫入。優點是小、精確、不撐爆 context、人工 labeler 可審查，單一寫入點也容易確保不混入其他使用者資料 (@12:00)。與 [Druga] [Iusztin&Bouchard] 的「小而簡單」同向。[F.Ali]
-- Observability 只告訴你發生什麼，trace 要轉成 durable context 才算 memory，否則今天的錯會持續重現 (@04:00)。講者主張多數可見改善來自 procedural memory（金融 agent 語氣從建議式滑到指示式，靠更新規則解決）(@05:00)。working memory（本次 run 的 scratchpad、工具結果）與 long-term 要分開，迴圈簡化成 capture、analyze、update (@06:30, @08:00)。踩雷：長時間背景 agent 更新 memory 後，若 runtime state 或快取沒重新讀取，行為不會改變，要確認哪些內容被 cache、更新何時對後續 run 可見 (@13:40)。[Broekhuizen]
+- Observability 轉成 memory：procedural memory 與踩雷：[Broekhuizen]
+  - Observability 只告訴你發生什麼，trace 要轉成 durable context 才算 memory，否則今天的錯會持續重現 (@04:00)。
+  - 講者主張多數可見改善來自 procedural memory（金融 agent 語氣從建議式滑到指示式，靠更新規則解決）(@05:00)。
+  - working memory（本次 run 的 scratchpad、工具結果）與 long-term 要分開，迴圈簡化成 capture、analyze、update (@06:30, @08:00)。
+  - 踩雷：長時間背景 agent 更新 memory 後，若 runtime state 或快取沒重新讀取，行為不會改變，要確認哪些內容被 cache、更新何時對後續 run 可見 (@13:40)。
 
 ## 沙箱，權限與安全
 
@@ -327,9 +336,17 @@
 - Agent 缺乏 workflow 那樣的成本 / 延遲控制，需要能以時間、金錢、tokens 定義並強制執行的 budget（開放問題）。[Zhang-EA]
 - 換模型不要當最早採用者，等幾週看是否經得起考驗；同一個模型在不同 harness 上表現不同，所以 eval 同時在測模型、harness 與題目品質。[Khan]
 - 預設 reasoning effort 是產品層的取捨：Claude Code 曾把預設由 high 降到 medium 換取延遲與用量，使用者感受到智能下降後改回；使用者寧可預設高、簡單任務再自行調低，改預設時要在 UI 清楚顯示。[Anthropic-PM]
-- 成本結構的重點在 2026 已從 output token 轉到每次呼叫的 input token 數、cache hit 比例與每任務步數 (@12:00)。案例（AA briefcase 知識工作 benchmark）：Opus 平均每任務約 21 美元，一個任務 165 步，單次 call 約 13 美分，answer token 只佔很小一部分（字幕數字零碎，可能有誤）(@11:00)。同一模型 Opus 5.5 從 low 約 1 美元到 max 約 21 美元每任務（與前述平均值同為 21 美元，待回原片確認），因為 reasoning effort 也改變步數，reasoning token 進訊息歷史累積成後續 input (@14:00)。不同模型每任務成本差數個數量級（頂級超過 5 美元，便宜模型 5 美分以下），開放權重落後最強專有模型約 3 到 9 個月 (@07:00)；同一智慧等級的成本約一年降 10 倍，決策要預期價格快速變動 (@09:30)。任務分兩類：unlimited intelligence（更聰明總是更好）要問預算；limited intelligence（查上月訂閱花費，便宜與昂貴模型答案都是 80 美元）要找達到天花板的最便宜方案 (@17:00)。數據來自講者自家 benchmark。[Cameron]
+- 成本結構：input token、步數與模型選擇：[Cameron]
+  - 成本結構的重點在 2026 已從 output token 轉到每次呼叫的 input token 數、cache hit 比例與每任務步數 (@12:00)。
+  - 案例（AA briefcase 知識工作 benchmark）：Opus 平均每任務約 21 美元，一個任務 165 步，單次 call 約 13 美分，answer token 只佔很小一部分（字幕數字零碎，可能有誤）(@11:00)。
+  - 同一模型 Opus 5.5 從 low 約 1 美元到 max 約 21 美元每任務（與前述平均值同為 21 美元，待回原片確認），因為 reasoning effort 也改變步數，reasoning token 進訊息歷史累積成後續 input (@14:00)。
+  - 不同模型每任務成本差數個數量級（頂級超過 5 美元，便宜模型 5 美分以下），開放權重落後最強專有模型約 3 到 9 個月 (@07:00)；同一智慧等級的成本約一年降 10 倍，決策要預期價格快速變動 (@09:30)。
+  - 任務分兩類：unlimited intelligence（更聰明總是更好）要問預算；limited intelligence（查上月訂閱花費，便宜與昂貴模型答案都是 80 美元）要找達到天花板的最便宜方案 (@17:00)。
+  - 數據來自講者自家 benchmark。
 - 模型選型：先看通用 Pareto 前緣縮小候選，原型階段用短名單自己測，上線前把短名單（至多約 5 個模型）拿去跑自建 benchmark；通用排名不一定符合自己的任務（例：Gemini 與 Anthropic 系列在複雜試算表任務上都強）(@05:00, @18:00)。[Cameron]
-- Effort 原則：先試較強模型加低 effort，通常比較弱模型加高 effort 更省 token 因而更便宜 (@18:00)；frontier 難題上 extra high 或 max effort 的 token 用量比 medium、low 多很多，結果卻差不多 (@51:30)。用 hill climbing 降成本：設定「表現至少持平、成本下降」，搜 model、effort、prompt；單一案例從 Opus 高 effort 起步，先換新版 Opus 低 effort、再換更小的模型（表現略降、成本大降）、最後調 prompt 把表現救回，成本降約 90% 且表現明顯提升（講者所述）(@17:02)。[L.Martin-Prompts]
+- Effort 原則與用 hill climbing 降成本：[L.Martin-Prompts]
+  - Effort 原則：先試較強模型加低 effort，通常比較弱模型加高 effort 更省 token 因而更便宜 (@18:00)；frontier 難題上 extra high 或 max effort 的 token 用量比 medium、low 多很多，結果卻差不多 (@51:30)。
+  - 用 hill climbing 降成本：設定「表現至少持平、成本下降」，搜 model、effort、prompt；單一案例從 Opus 高 effort 起步，先換新版 Opus 低 effort、再換更小的模型（表現略降、成本大降）、最後調 prompt 把表現救回，成本降約 90% 且表現明顯提升（講者所述）(@17:02)。
 - 已知流程把路由與判斷從 LLM 搬到腳本與小模型，就能降級模型（單次 demo：平均 wall clock 從約 7.5 分鐘降到約 0.5 到 2 分鐘，講者口述，字幕可能有誤），代價是要先有成功的 run 可編譯（講者說那些 run 其實不太一致，@14:00） (@19:00, @19:30)。講者另說成本降「約 100%」，明顯誇大。[Blumenfeld]
 - 新模型出來要重新評估哪個模型適合哪個任務；同一 workflow 內不同子任務（推理、確定性、影像、SQL、log）各 frontier model 擅長不同，講者舉例影像用 Gemini、確定性步驟用 OpenAI、開放式調查用 Claude (@07:00, @12:01)。[Krovvidi]
 - Session 可設 budget（示範 1.25 美元），超過時收到事件，加預算後從原處續跑；刻意不告訴模型預算，因為目前模型知道預算會變得「焦慮」(@39:01, @84:02)。可回應上面 [Zhang-EA] 提的 budget 開放問題。[Avilla]
