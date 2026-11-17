@@ -1,10 +1,10 @@
-# Prompt → Loop → Graph：把人往外推的發展史
+# Prompt → Context → Harness → Loop → Graph：把人往外推的發展史
 
 > 主線：每一層都是因為上一層撐不住任務複雜度，才被逼出來；而每上一層，人就往外退一步，從「寫字的人」變成「設計組織的人」。關係是超集，不是取代：Prompt ⊂ Context ⊂ Harness ⊂ Loop ⊂ Graph。這裡的 ⊂ 指論述關注範圍由窄到寬（表達→輸入→設施→流程→組織），不是集合論的嚴格子集，層與層之間互有交疊。
 >
 > 閱讀提醒：公式按「範圍」排序，章節按「時間」排序，兩者不完全同序（Context 主流化晚於 Harness 論述，所以 §3 Harness 在 §4 Context 之前）。
 
-2026-11-12 補入 AI Engineer 頻道 2026-10 至 2026-11 上傳的新影片（由 Claude Sonnet 讀逐字稿摘要後併入，未逐支回看影片）。
+2026-11-12 補入 AI Engineer 頻道 2026-10 至 2026-11 上傳的新影片（由 Claude Sonnet 讀逐字稿摘要後併入，未逐支回看影片；內文的 (@mm:ss) 是影片時間點，依字幕標記估計，誤差約一分鐘）。
 
 ![Prompt → Context → Harness → Loop → Graph：範圍擴大，人的位置往外退](assets/prompt-to-graph.svg)
 
@@ -15,7 +15,7 @@
 | Prompt | 怎麼表達任務 | 逐次寫 prompt 的人 | 模型看不見的東西還是看不見 |
 | Context | 讓模型看見什麼 | 策展資訊的人 | 管得再好，仍是一次跑完就結束 |
 | Harness | 工具、執行環境、驗證、權限 | 搭鷹架的人 | 有設施，但沒人定義「反覆做到對為止」 |
-| Loop | 觀察、行動、驗證、修正的循環 | 調度與調校的人 | 主迴圈單進程，難以多體協同與並行 |
+| Loop | 觀察、行動、驗證、修正的循環 | 調度與調校的人 | 主迴圈單行程，難以多體協同與並行 |
 | Graph | 多 agent 的組織、狀態與路由 | 設計組織的人 | 協調成本、debug 難度、並行衝突 |
 
 ## 時間軸總覽
@@ -28,7 +28,7 @@
 | 2022-10 | [ReAct](https://arxiv.org/abs/2210.03629)（Yao et al.） | Thought→Action→Observation，可調工具 | 小規模 loop，無獨立驗證 |
 | 2023-03 | [AutoGPT](https://github.com/Significant-Gravitas/AutoGPT) / BabyAGI：第一波全自主 loop | 人只給目標，系統自行拆解執行 | 無 Harness／Context 地基，不可控而退燒 |
 | 2023-03 | [Reflexion](https://arxiv.org/abs/2303.11366) / [Self-Refine](https://arxiv.org/abs/2303.17651) | 輸出後自己審查修正 | 單人 loop，無結構化狀態、無協同 |
-| 2023-06 | [OpenAI Function Calling](https://openai.com/index/function-calling-and-other-api-updates/) | 模型輸出結構化工具呼叫，調用工具有標準介面 | 各家介面不一，無跨廠生態 |
+| 2023-06 | [OpenAI Function Calling](https://openai.com/index/function-calling-and-other-api-updates/) | 模型輸出結構化工具呼叫，呼叫工具有標準介面 | 各家介面不一，無跨廠生態 |
 | 2023-06 | Lilian Weng [LLM Powered Autonomous Agents](https://lilianweng.github.io/posts/2023-06-23-agent/)（06-23） | 把 LLM agent 拆成 planning、memory、tool use 三個元件的綜述 | 有限 context、長程規劃與自然語言介面的可靠性仍是瓶頸 |
 | 2024-11 | [MCP 發布](https://modelcontextprotocol.io/) | 工具介面標準化 | 只有介面，沒有組織方式 |
 | 2024-12 | Anthropic [Building Effective Agents](https://www.anthropic.com/engineering/building-effective-agents) | workflows vs agents 分類：prompt chaining、routing、parallelization、orchestrator-workers、evaluator-optimizer | 路徑寫死或靠人在中間傳話 |
@@ -36,8 +36,8 @@
 | 2025-03 | [Why Do Multi-Agent LLM Systems Fail?](https://arxiv.org/abs/2503.13657)（Cemri et al.，MAST） | 多 agent 失敗的分類與標註資料集 | 改 prompt 或拓撲只有局部改善 |
 | 2025-06 | Anthropic [multi-agent research system](https://www.anthropic.com/engineering/multi-agent-research-system)（06-13）；Cognition [Don't Build Multi-Agents](https://cognition.com/blog/dont-build-multi-agents)（06-12） | 正反兩方：orchestrator-worker 並行探索 vs 單執行緒共享完整 context | 前者要處理狀態與 checkpoint，後者放棄並行 |
 | 2025-06 | [Context Engineering 開始主流化](https://simonwillison.net/2025/Jun/27/context-engineering/)（Lütke → Karpathy → Willison） | 從怎麼說，變成該讓模型看見什麼 | 管得再好，仍是一次跑完就結束 |
-| 2025-07 | [Ralph Wiggum 技巧](https://ghuntley.com/ralph/)（Geoffrey Huntley） | `while :; do cat PROMPT.md \| claude-code ; done`，系統自己跑，人退到調度者 | 主迴圈單進程、無局部重試、無結構化狀態 |
-| 2025-09 | Anthropic [Effective context engineering for AI agents](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents)（09-29） | 把 context 當有限資源：compaction、結構化筆記、sub-agent | 仍是單一 agent 的內部管理 |
+| 2025-07 | [Ralph Wiggum 技巧](https://ghuntley.com/ralph/)（Geoffrey Huntley） | `while :; do cat PROMPT.md \| claude-code ; done`，系統自己跑，人退到調度者 | 主迴圈單行程、無局部重試、無結構化狀態 |
+| 2025-09 | Anthropic [Effective context engineering for AI agents](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents)（09-29） | 把 context 當有限資源：compaction、結構化筆記、subagent | 仍是單一 agent 的內部管理 |
 | 2025-11 | Anthropic [Effective harnesses for long-running agents](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents)（11-26） | 跨 context window 的長任務：initializer、進度檔、feature list、git 紀律 | 設計焦點仍在單一 agent 的接力 |
 | 2024–2026（技術→論述） | Graph 編排框架（LangGraph、AutoGen 等）→ 2026 年中 Graph Engineering 論戰與綜述 | 多 agent 協同、並行、分支路由、斷點續跑 | 論述新，技術早已存在 |
 
@@ -51,11 +51,11 @@
 
 ## 2. ReAct 與 Reflection（2022–2023）：最小的 Loop
 
-[ReAct](https://arxiv.org/abs/2210.03629) = Reasoning + Acting。以 Thought→Action→Observation 循環調用工具（如 Wikipedia API），在 HotpotQA、FEVER 上緩解 CoT 幻覺，在 ALFWorld、WebShop 超越 imitation / RL baseline。
+[ReAct](https://arxiv.org/abs/2210.03629) = Reasoning + Acting。以 Thought→Action→Observation 循環呼叫工具（如 Wikipedia API），在 HotpotQA、FEVER 上緩解 CoT 幻覺，在 ALFWorld、WebShop 超越 imitation / RL baseline。
 
 Reflection（[Reflexion](https://arxiv.org/abs/2303.11366)、[Self-Refine](https://arxiv.org/abs/2303.17651)）則是單人版 Loop：輸出後自己審查、修正再定稿。Andrew Ng 把它與 Planning、Tool Use、Multi-agent 並列為 agentic design pattern（見 [DeepLearning.AI 課程](https://deeplearning.ai/courses/agentic-ai/)）。
 
-Thorsten Ball 的〈[How to Build an Agent](https://ampcode.com/notes/how-to-build-an-agent)〉用 Go 與 Anthropic SDK（`anthropic-sdk-go`），不到 400 行程式（多數是 boilerplate）就做出能改程式的 agent，只有 `read_file`、`list_files`、`edit_file` 三個工具。核心是「LLM、一個 loop、足夠的 token」：把整段對話送給模型，模型要用工具就回傳工具呼叫，程式執行後把結果放回對話再送出。作者的主張是，agent 的內層 loop 並不神祕，編輯器整合、system prompt、回饋時機、UI 這些是工程功夫，不需要天才時刻。
+補充（2025 年的回顧文章）：Thorsten Ball 的〈[How to Build an Agent](https://ampcode.com/notes/how-to-build-an-agent)〉用 Go 與 Anthropic SDK（`anthropic-sdk-go`），不到 400 行程式（多數是 boilerplate）就做出能改程式的 agent，只有 `read_file`、`list_files`、`edit_file` 三個工具。核心是「LLM、一個 loop、足夠的 token」：把整段對話送給模型，模型要用工具就回傳工具呼叫，程式執行後把結果放回對話再送出。作者的主張是，agent 的內層 loop 並不神祕，編輯器整合、system prompt、回饋時機、UI 這些是工程功夫，不需要天才時刻。
 
 共同局限：規模小、無獨立驗證子系統、無結構化狀態。
 
@@ -63,17 +63,17 @@ Thorsten Ball 的〈[How to Build an Agent](https://ampcode.com/notes/how-to-bui
 
 三塊地基陸續到位：
 
-- [Function Calling](https://openai.com/index/function-calling-and-other-api-updates/)（2023-06-13）：模型能輸出結構化的工具呼叫，「調用工具」第一次有了標準形狀，但各家介面不一。
+- [Function Calling](https://openai.com/index/function-calling-and-other-api-updates/)（2023-06-13）：模型能輸出結構化的工具呼叫，「呼叫工具」第一次有了標準形狀，但各家介面不一。
 - [MCP](https://modelcontextprotocol.io/)（2024-11）：工具的 USB-C，Harness 的介面層。官方公告見 [Anthropic MCP 發布](https://www.anthropic.com/news/model-context-protocol)。
 - [Building Effective Agents](https://www.anthropic.com/engineering/building-effective-agents)（2024-12-19）：Anthropic 給出實務分類，workflows（prompt chaining、routing、parallelization、orchestrator-workers、evaluator-optimizer）vs agents（模型動態指揮）。建議從 LLM API 做起，框架只省 boilerplate，過度抽象難 debug。（Anthropic 已在原文加註：2024-12 以來環境持續演進，後續發展另見其新文章。）
 
-同期的綜述也在整理這些部件：[Weng（2023-06-23）](https://lilianweng.github.io/posts/2023-06-23-agent/)以 LLM 為大腦，配 planning（子目標拆解、反思）、memory（短期為 in-context learning、長期為外部向量庫）、tool use 三個元件，並列出有限 context、長程規劃、自然語言介面可靠性三項挑戰；[Huyen（2025-01-07）](https://huyenchip.com/2025/01/07/agents.html)則主張 agent 由其環境與可用工具定義，planning 應與執行解耦、先驗證計畫再執行，並把失敗分成 planning 失敗（無效工具、錯誤參數、目標未達）與 tool 失敗。
+綜述也在整理這些部件（其中 Huyen 一篇晚至 2025 年）：[Weng（2023-06-23）](https://lilianweng.github.io/posts/2023-06-23-agent/)以 LLM 為大腦，配 planning（子目標拆解、反思）、memory（短期為 in-context learning、長期為外部向量庫）、tool use 三個元件，並列出有限 context、長程規劃、自然語言介面可靠性三項挑戰；[Huyen（2025-01-07）](https://huyenchip.com/2025/01/07/agents.html)則主張 agent 由其環境與可用工具定義，planning 應與執行解耦、先驗證計畫再執行，並把失敗分成 planning 失敗（無效工具、錯誤參數、目標未達）與 tool 失敗。
 
-公式（作者整理）：Agent = Model + Harness。Harness = 權重之外的一切：工具、執行環境、記憶、沙盒、驗證迴圈、權限邊界。
+公式（作者整理）：Agent = Model + Harness。Harness = 權重之外的一切：工具、執行環境、記憶、沙箱、驗證迴圈、權限邊界。
 
 「Harness」作為詞語，可舉證的官方用例是 Anthropic 2025-11 的 [Effective harnesses for long-running agents](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents)：用 initializer agent 建好環境、進度檔與 feature list，再讓 coding agent 逐 session 接力。概念成形在 2024，詞語主流化在 2025 後半，與 Context 的情形類似。
 
-人的位置：不再逐次寫 prompt，而是搭好工具、沙盒、驗證與權限。
+人的位置：不再逐次寫 prompt，而是搭好工具、沙箱、驗證與權限。
 
 ## 4. Context Engineering（2025-06）：該讓模型看見什麼
 
@@ -81,7 +81,7 @@ Thorsten Ball 的〈[How to Build an Agent](https://ampcode.com/notes/how-to-bui
 
 Willison 的觀察：prompt engineering 被誤解為打字進 chatbot 的 pretentious 詞，context engineering 的 inferred definition 更接近本意。時間語義：Willison 原文說的是該詞 "recently started to gain traction"，即此詞並非 2025-06 新造，該時點是它開始成為主流論述。
 
-Anthropic 2025-09 的 [Effective context engineering for AI agents](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents) 把它講得更工程化：context 是有限資源、報酬遞減，目標是找出「最小的高訊號 token 集合」；長任務用三招：compaction（壓縮歷史後重開視窗）、結構化筆記（外部持久記憶）、sub-agent（各自處理再回傳摘要）。
+Anthropic 2025-09 的 [Effective context engineering for AI agents](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents) 把它講得更工程化：context 是有限資源、報酬遞減，目標是找出「最小的高訊號 token 集合」；長任務用三招：compaction（壓縮歷史後重開視窗）、結構化筆記（外部持久記憶）、subagent（各自處理再回傳摘要）。
 
 工程上兩門必修：[Context Rot](https://research.trychroma.com/context-rot)（Chroma 技術報告，2025-07；無關上下文太多反而變差，需壓縮裁剪）、Memory（跨 session 持久化）。概念上 Context 是 Harness 的部件，雖然它開始主流化的時間晚於 Harness 論述。
 
@@ -89,7 +89,7 @@ Anthropic 2025-09 的 [Effective context engineering for AI agents](https://www.
 
 極限：上下文管得再好，仍是一次跑完就結束。
 
-## 5. Loop Engineering（技巧 2025-07，命名為社群追述）：把人拿掉
+## 5. Loop Engineering（技巧 2025-07，命名為社群追述）：把人從中間拿掉
 
 把人在中間傳話拆掉，改成執行→觀察→評估→修正→再執行。
 
@@ -97,16 +97,16 @@ Anthropic 2025-09 的 [Effective context engineering for AI agents](https://www.
 
 代表案例 [Ralph Wiggum](https://ghuntley.com/ralph/)（Huntley，2025-07-14）：
 
-- 純粹形態就是 bash loop，單體 monolith、單 repo、單進程，每輪只做一件事，且由 Ralph 自己決定最重要的一件事。
+- 純粹形態就是 bash loop，單體 monolith、單 repo、單行程，每輪只做一件事，且由 Ralph 自己決定最重要的一件事。
 - 每輪 deterministic 分配相同 stack：plan（`fix_plan.md`）+ specs（事先與 agent 長談寫出的規格）。
-- 主迴圈雖單進程，搜尋與寫入階段可派出大量 subagent，但 build / test 驗證只收斂為一個。
+- 主迴圈雖單行程，搜尋與寫入階段可派出大量 subagent，但 build / test 驗證只收斂為一個。
 - 作者自述："deterministically bad in an undeterministic world"；"Ralph gets tuned - like a guitar"，靠看 stream 找壞模式來調 prompt。
 
-「Loop Engineering」作為詞語，2026 年 6–8 月有大量中英文媒體報導與技術彙整（例如 [Analytics Vidhya 的 Harness vs Loop vs Graph 指南](https://www.analyticsvidhya.com/blog/2026/08/agent-harness-loop-graph-engineering/)），可見它在 2026 年中已成主流論述；最早出處仍待查。
+「Loop Engineering」作為詞語，2026 年 6–8 月有大量中英文媒體報導與技術彙整（例如 [Analytics Vidhya 的 Harness vs Loop vs Graph 指南](https://www.analyticsvidhya.com/blog/2026/08/agent-harness-loop-graph-engineering/)），可見它在 2026 年中已成主流論述；最早出處仍待查（線索：二手報導稱 Steinberger 的貼文與 Addy Osmani 的文章同在 2026-06-07 帶起此詞，未核對原文）。
 
 人的位置：調度者與調校者，設定目標與 gate，看輸出調 prompt。
 
-局限：主迴圈單進程、無局部重試、缺結構化狀態。toy loop 與 production loop 的分界在有無程式化 verifier / gate。
+局限：主迴圈單行程、無局部重試、缺結構化狀態。toy loop 與 production loop 的分界在有無程式化 verifier / gate。
 
 ## 6. Graph Engineering（技術 2024，命名 2026）：一個 loop 不夠用
 
@@ -121,17 +121,17 @@ Anthropic 2025-09 的 [Effective context engineering for AI agents](https://www.
 ### 2026 年的命名與論述
 
 - 2026-07-18：Peter Steinberger 在 X 上問 "Are we still talking loops or did we shift to graphs yet?" 引發論戰。
-- 同日：Hamel Husain 發表〈Loop Engineering Is Dead. Enter Graph Engineering.〉（[TDS 事件記錄](https://towardsdatascience.com/graph-engineering-for-ai-agents-from-prompts-and-loops-to-workflows/)）。
+- 約四個半小時後：Hamel Husain 以 X Article 發表〈Loop Engineering Is Dead. Enter Graph Engineering.〉（[TDS 事件記錄](https://towardsdatascience.com/graph-engineering-for-ai-agents-from-prompts-and-loops-to-workflows/)）。
 - 2026-08-21：系統性綜述 [arXiv:2608.21156](https://arxiv.org/abs/2608.21156)（*Graph Engineering in the Era of LLM Agents: From Individual Intelligence to System Intelligence*），其摘要正以 Prompt / Context / Harness / Loop / Graph Engineering 排出本篇同一條鏈。
 - 2026-11 Neo4j 的 Blumenfeld 在 AI Engineer 上定義 graph engineering 為把 agent 工作設計成明確的圖（node 做事、edge 傳 state），並自承名稱是新的、機制（state machine、workflow graph、knowledge graph）不新；他分執行圖、context graph、procedural graph（把 skill 的步驟與決策寫成圖，由程式而非 agent 決定路由）三種，後兩者是他的重點，案例為自家產品、證據薄弱 (@01:00, @15:00)。
 
 ### Loop → Graph 的代價
 
-- 並行隔離：並行改同一檔案會互蓋，需 sub-agent 隔離或 worktree 再合併。
+- 並行隔離：並行改同一檔案會互蓋，需 subagent 隔離或 worktree 再合併。
 - 狀態與斷點：節點間要有結構化狀態，失敗後要能從 checkpoint 續跑。
 - 可觀測性：多體互動的 debug 比單一 loop 困難得多，需要完整 tracing。
 - 成本與協調開銷：agent 越多，token 與溝通成本越高。
-- 多體不必然更好：Cognition 主張單執行緒、共享完整 context 的線性 agent 作為預設，因為並行 agent 的行動各自帶著隱含決策，容易互相衝突。Graph 適合「可分解、可並行、廣度型」的任務，不是萬用解。Anthropic Managed Agents 團隊（2026-10）也提到人傾向限制 Claude 的拓樸，但隨模型變強官方持續拿掉護欄，讓 Claude 自己決定 sub agent 數量常常表現更好，且目前沒有 graph 式 workflow UI (@07:01)。
+- 多體不必然更好：Cognition 主張單執行緒、共享完整 context 的線性 agent 作為預設，因為並行 agent 的行動各自帶著隱含決策，容易互相衝突。Graph 適合「可分解、可並行、廣度型」的任務，不是萬用解。Anthropic Managed Agents 團隊（2026-10）也提到人傾向限制 Claude 的拓撲，但隨模型變強官方持續拿掉護欄，讓 Claude 自己決定 subagent 數量常常表現更好，且目前沒有 graph 式 workflow UI (@07:01)。
 - 失敗長什麼樣：[Cemri et al.（UC Berkeley 等，NeurIPS 2025 Datasets and Benchmarks）](https://arxiv.org/abs/2503.13657)先以 Grounded Theory 細讀 5 個框架的 150 多條 trace（HyperAgent、AppWorld、AG2、ChatDev、MetaGPT；6 位專家標註，每人逾 20 小時），再經 3 位專家多輪標註，Cohen's κ 達 0.88，得到 MAST（Multi-Agent System Failure Taxonomy）。後以 LLM-as-a-Judge（o1）標註，與人工 κ = 0.77，建成涵蓋 7 個框架、1642 條 trace 的 MAST-Data。
 - 三大類 14 種模式：System Design Issues（如 Disobey Task Specification、Step Repetition、Unaware of Termination Conditions）、Inter-Agent Misalignment（如 Fail to Ask for Clarification、Task Derailment、Reasoning-Action Mismatch）、Task Verification（Premature Termination、No or Incomplete Verification、Incorrect Verification）。
 - 單靠改 prompt 或拓撲修多少：ChatDev 在 ProgramDev-v0 上（同一 user prompt 與 GPT-4o），基線成功率 25.0%；改善角色規格後為 34.4%（+9.4）；另一種做法是改拓撲（DAG 改成循環圖，CTO agent 確認所有審查都通過才結束，即加入高階任務目標的驗證步驟），為 40.6%（相對基線 +15.6）；AG2 在 GSM-Plus 上的改善只有幾個百分點。作者的結論是這些修正有效但不夠，失敗率仍高，要靠更根本的 MAS 重新設計與模型層進展。
@@ -144,7 +144,7 @@ Anthropic 2025-09 的 [Effective context engineering for AI agents](https://www.
 
 Prompt 管怎麼表達任務；Context 決定讓模型看見什麼；Harness 接上可執行環境與回饋；Loop 定義反覆觀察行動驗證恢復；Graph 編排多體組織。
 
-2026 年中 loops vs graphs 論戰的起點，是〈Loop Engineering Is Dead. Enter Graph Engineering.〉這類標題，隨後也出現「loop 沒有死」的反駁與各方解讀。類似句式過去也常見（例如 "prompt engineering is dead"、"RAG is dead"），多半是標題噱頭，實際發展往往是舊層被吸收為新層的部件，而不是消失。
+2026 年中 loops vs graphs 論戰由 Steinberger 的提問引發（見 §6），擴散則靠〈Loop Engineering Is Dead. Enter Graph Engineering.〉這類標題，隨後也出現「loop 沒有死」的反駁與各方解讀。類似句式過去也常見（例如 "prompt engineering is dead"、"RAG is dead"），多半是標題噱頭，實際發展往往是舊層被吸收為新層的部件，而不是消失。
 
 同類論述還有 Jediah Katz（前 Cursor，現 SpaceXAI）2026-10 的〈Is the Agent Harness Dead?〉：他承認花俏 harness 不再增加 coding 智慧，但主張 harness 只是抽象層上升，從組合 LLM call 變成以 agent 為基本單元，也是「舊層被吸收」的寫法 (@17:01)。他把 prompt engineer 到 context engineer 到 harness engineering 的定名時間講成 2023 初、2025 中、2026 初 (@01:00)，與本篇引的 Anthropic 2025-11 harness 用例略有出入，屬講者口述。OpenProse 團隊的〈Stop Telling Agents How〉則從另一端說同一件事：prompting、context、harness 都在往上抽象，應宣告 outcome 而非手寫 how，跑通後再把 trace 固化成 how 以降成本；其實作與 DSPy 相反（讓一切留在自然語言，由 AI 當 compiler）(@04:00, @15:02, @26:01)，廠商自家語言，宣稱未獨立驗證。
 
@@ -156,7 +156,7 @@ Prompt 管怎麼表達任務；Context 決定讓模型看見什麼；Harness 接
 | --- | --- |
 | 輸出品質不穩，但模型有足夠資訊 | 留在 Prompt：改指令、加範例 |
 | 模型缺資訊，或輸入太長導致變差 | 升到 Context：檢索、裁剪、壓縮、記憶 |
-| 需要動手做事、取得回饋 | 升到 Harness：工具、沙盒、驗證、權限 |
+| 需要動手做事、取得回饋 | 升到 Harness：工具、沙箱、驗證、權限 |
 | 需要多輪「做→驗→修」，且有程式化的驗證標準 | 升到 Loop：先確認 verifier / gate 存在 |
 | 任務可拆解並行、需要分支路由、斷點續跑或人機協同，單一 loop 已是瓶頸 | 升到 Graph：同時預期狀態、debug、成本的代價 |
 
@@ -166,7 +166,7 @@ Prompt 管怎麼表達任務；Context 決定讓模型看見什麼；Harness 接
 
 - 已驗證日期：RAG 2020-05-22、CoT 2022-01-28、ReAct 2022-10-06、Function Calling 2023-06-13、Weng 2023-06-23、LangGraph 官方發布 2024-01-17、Anthropic Building Effective Agents 2024-12-19、Huyen 2025-01-07、MAST 2025-03（由 arXiv ID 2503.13657 推得；v3 為 2025-10-26）、Cognition 2025-06-12、Anthropic multi-agent 2025-06-13、Willison 2025-06-27、Ralph 2025-07-14、Context Rot 2025-07-14、Anthropic context engineering 2025-09-29、Anthropic harnesses 2025-11-26、X 論戰起點 2026-07-18（由 X snowflake ID 反推，UTC）、Graph Engineering 綜述 2026-08-21。
 - 命名時間屬社群論述、敘事框架，不是學術斷代。Graph Engineering 的論戰與綜述已可舉證（見 §6）；Loop / Harness 作為詞語的最早出處仍未能獨立驗證。
-- 尚未獨立核實：Hamel Husain 文章的確切日期與全文、TDS 文章內容、arXiv 摘要全文；引用前建議回原文確認。
+- Steinberger 提問與 Husain 文章的先後（2026-07-18，相隔約四個半小時）已由多篇二手報導交叉確認（2026-11-17 查）。尚未獨立核實：Husain 文章全文、TDS 文章全文、arXiv 摘要全文；引用前建議回原文確認。
 
 ## 核心來源
 
