@@ -1,6 +1,6 @@
 # Coding agent 接進 CI 與團隊流程
 
-本篇整理 Claude Code、Codex、Cursor 三家把 coding agent 接進 PR、CI 與團隊流程的做法；資料取得日期 2026-10-14，內文的 `[簡稱]` 對應文末來源表。2026-11-12 補入 AI Engineer 頻道 2026-10 至 2026-11 上傳的新影片（由 Claude Sonnet 讀逐字稿摘要後併入，未逐支回看影片），集中在「企業實務（演講）」一節，屬演講者自述，與官方文件性質不同。
+本篇整理 Claude Code、Codex、Cursor 三家把 coding agent 接進 PR、CI 與團隊流程的做法；資料取得日期 2026-10-14，內文的 `[簡稱]` 對應文末來源表。2026-11-12 補入 AI Engineer 頻道 2026-10 至 2026-11 上傳的新影片（由 Claude Sonnet 讀逐字稿摘要後併入，未逐支回看影片；內文的 (@mm:ss) 是影片時間點，依字幕標記估計，誤差約一分鐘），集中在「企業實務（演講）」一節，屬演講者自述，與官方文件性質不同。
 
 ## 三種整合形態
 
@@ -86,13 +86,13 @@ jobs:
 
 ### Code review agent 的設計
 
-- 最小版本：sandbox（Firecracker 等）加 agent，PR webhook 觸發，用 GitHub review API 回貼，約 5 分鐘出回饋；講者建議用開源 harness（Open Code、Pi 等）以保持模型中立。這個版本會出五個問題：漏 bug、缺 context、貴（每個 PR 約 3 到 25 美元）、nitpick 太多、同一 PR 每次跑都找到新 bug (@03:00) (@04:00) [Gupta]。
+- 最小版本：sandbox（Firecracker 等）加 agent，PR webhook 觸發，用 GitHub review API 回貼，約 5 分鐘出回饋；講者建議用開源 harness（OpenCode、Pi 等）以保持模型中立。這個版本會出五個問題：漏 bug、缺 context、貴（每個 PR 約 3 到 25 美元）、nitpick 太多、同一 PR 每次跑都找到新 bug (@03:00) (@04:00) [Gupta]。
 - Nitpick 有雙重傷害：人會忽略狼來了，而且 coding agent 會照單全收所有 review comment，程式碼因此變得過度防禦 (@05:01) [Gupta]。
 - 改善做法：prompt 列出要找的特定 bug 類型（可從過去事故建目錄）並明確定義、禁止 nitpick；prompt 小改動會大幅改變留言數，且 review 只能證明有 bug 不能證明沒有 (@06:00) [Gupta]。
 - 模型反轉：用另一家模型審查，同模型審同模型抓得少。講者自家觀察是 Claude 比 GPT 多約三倍 off-by-one、GPT 較常出現 auth bypass；翻轉模型後抓出率高約 10%。可由 branch 名稱 `codex/` 或 commit 的 `Co-authored-by` 辨識作者模型，約 80% 準 (@09:00) [Gupta]。
 - 自主測試：用依賴齊全的 sandbox 起整個 stack，讓 agent 用 computer vision 端到端點擊，可發現只看 diff 看不出的問題（例如按鈕在 iPhone 被隱藏）；前提是應用流程有文件、build script 夠簡單 (@14:01) [Gupta]。
-- 成本分層：做完仍是每個 PR 約 3 到 20 美元。找 context 用小模型、使用者流程測試用輕量 computer use 模型、分析 bug 與送審用 frontier 模型；約 20% 用 frontier，共約 20 個子任務各有指定模型。不用資料集就換小模型，退化要到出事故才知道 (@16:01) [Gupta]。
-- Anthropic 的流程：先由 Claude 做第一輪審查，且須能像真實使用者實際操作（瀏覽器、工具、lint）；用 hooks 在每次編輯時檢視 diff，形成修正 PR 的迴圈。團隊品味寫進共享的 `CLAUDE.md` 或 `agents.md`；人負責檢查 agent 附的證據，如 UI 變更要有瀏覽器測試影片或截圖 (@06:00) (@07:02) [Osmani]。
+- 成本分層：做完仍是每個 PR 約 3 到 20 美元（前文為 3 到 25 美元，待回原片確認）。找 context 用小模型、使用者流程測試用輕量 computer use 模型、分析 bug 與送審用 frontier 模型；約 20% 用 frontier，共約 20 個子任務各有指定模型。不用資料集就換小模型，退化要到出事故才知道 (@16:01) [Gupta]。
+- Anthropic 的流程：先由 Claude 做第一輪審查，且須能像真實使用者實際操作（瀏覽器、工具、lint）；用 hooks 在每次編輯時檢視 diff，形成修正 PR 的迴圈。團隊品味寫進共享的 `CLAUDE.md` 或 `AGENTS.md`；人負責檢查 agent 附的證據，如 UI 變更要有瀏覽器測試影片或截圖 (@06:00) (@07:02) [Osmani]。
 - Bug Hunter flow：把 diff 切成多個 slice、各 slice 一個 context 列疑點，第二階段另一個 reviewer 同意或反對，再由 prover 階段下載 repo 重現 bug，最後以 inline 評論與嚴重度回到 PR；也能涵蓋 PR 以外的 codebase 角落 (@64:00 到 @66:00) [Avilla]。
 - 以 reviewer 當 back pressure：每個 PR 啟動一串 review agent，有的一輪過、有的跑 14 輪才放行；開發 agent 必須處理 review 回饋才算完成，每次是全新 session 對照 contract 檢查，避開同一模型檢查自己的自信偏誤 (@14:00) [OpenProse]。觸發方式是 webhook 或 cron，例如 GitHub issue 進來、輸出是 commit；PR 進來觸發 adversarial review (@12:01) [OpenProse]。
 - 確定性檢查與 AI review 的分工：Sonar 主張同一 agent 自審或另一個 agent 審都容易漏判或幻覺，確定性分析每次結果相同才可治理，仍建議在其上再疊 AI review (@13:30) [Carlsen-Phelan]。這是廠商立場，與上面「模型反轉」的做法有張力：一個加 AI reviewer，一個先用確定性規則。

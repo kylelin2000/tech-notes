@@ -1,6 +1,6 @@
 # Agent Evals：持續改進與評估
 
-本篇從 [harness-engineering.md](harness-engineering.md) 的「持續改進與評估 (evals)」章節拆出，內容逐條照搬。2026-11-12 補入 AI Engineer 頻道 2026-10 至 2026-11 上傳的新影片（由 Claude Sonnet 讀逐字稿摘要後併入，未逐支回看影片）。內文的 `[簡稱]`（如 [Schmid-Evals]）對應文末「來源」表，完整索引見原筆記的來源索引。
+本篇從 [harness-engineering.md](harness-engineering.md) 的「持續改進與評估 (evals)」章節拆出，最初逐條照搬，之後獨立擴充。2026-11-12 補入 AI Engineer 頻道 2026-10 至 2026-11 上傳的新影片（由 Claude Sonnet 讀逐字稿摘要後併入，未逐支回看影片；內文的 (@mm:ss) 是影片時間點，依字幕標記估計，誤差約一分鐘）。內文的 `[簡稱]`（如 [Schmid-Evals]）對應文末「來源」表；本篇來源表即完整索引。
 
 ## 做法
 
@@ -39,7 +39,7 @@
 
 ### 從 trace 與對話挖失敗
 
-- 閉環：蒐集團隊所有 agent conversation，用依自訂 rubric 的 scoring agent 評分，濾出失敗找原因，再由定時執行的 agent 對 skills 與設定提出修改，持續評分看分數變化 (@02:01)。資料需要 transcript、tool calls、output 三樣，有團隊把每人的 .claude 資料夾壓縮丟到共用 S3 (@03:01)。自我改善 agent 例如每 24 小時取過去 24 小時的對話（講者舉例約 200 筆、其中 50 筆失敗）與評語找共通點，並給它 skills 與程式碼庫的修改權，產出如加入 coverage pyramid 減少冗餘測試 (@12:01)；改進以待審 PR 放進 inbox，例如補上 triage skill 缺少的 spawn sub-agents 設定，省下反覆失敗的 tool call (@18:01)。PR merge 後觸發，每個 conversation 一個評分 agent，可隨機抽樣省 token，每筆都要寫出失敗或通過的原因 (@10:01)。[Holmes]
+- 閉環：蒐集團隊所有 agent conversation，用依自訂 rubric 的 scoring agent 評分，濾出失敗找原因，再由定時執行的 agent 對 skills 與設定提出修改，持續評分看分數變化 (@02:01)。資料需要 transcript、tool calls、output 三樣，有團隊把每人的 .claude 資料夾壓縮丟到共用 S3 (@03:01)。自我改善 agent 例如每 24 小時取過去 24 小時的對話（講者舉例約 200 筆、其中 50 筆失敗）與評語找共通點，並給它 skills 與程式碼庫的修改權，產出如加入 coverage pyramid 減少冗餘測試 (@12:01)；改進以待審 PR 放進 inbox，例如補上 triage skill 缺少的 spawn subagents 設定，省下反覆失敗的 tool call (@18:01)。PR merge 後觸發，每個 conversation 一個評分 agent，可隨機抽樣省 token，每筆都要寫出失敗或通過的原因 (@10:01)。[Holmes]
 - 需要 tool call 級的 trace，因為 agent 會繞過路障而不告訴你：測試環境 skill 裡有過期指示，agent 靠亂 ping port 試出環境，團隊只看到「多花約 2 分鐘」(@08:01)。Skill Doctor 可在單機一次性掃描 Claude、Codex 等對話批次評分；有分數 dashboard 才能把某次 skill 改動對應到分數轉折點，可見的分數比看不到的 memory 或 dreaming 更能證明「改動有效」(@13:01, @16:01)。[Holmes]
 - Agent 的 bug 很少是顯式錯誤：status 是 ok，但同一 turn 有 43 個相同 tool call 或 227 秒回應才是問題，多長算太長取決於用例；用讀 trace 的 agent 自動找 (@16:01)。Judge 仍需人的 gold labels 對齊，速度對品質的取捨是人的判斷 (@17:00)。[F.Ali]
 - 把 transcript 當 eval：agent 實際跑過的指令就是 test case，緊接著的下一步是粗略的 answer key；新舊版重放，檢查排序改動後後續用到的結果仍在前面、改格式沒遺漏；agent 換參數重試通常就是失敗案例；留幾個 case 不拿來調、專門打分 (@07:02)。先備份 transcript（Claude Code 可能 30 天後刪掉不活躍的），搜「工具名稱加 pipe」與「同工具馬上換參數重呼叫」(@11:01)。[Bhardwaj-CLI]
@@ -51,7 +51,7 @@
 
 ### 回歸與發布
 
-- 改善一個維度不等於整體變好。講者的假設情境：在 support agent prompt 加一行「執行任何動作前先確認」，action safety 上升 17 點、task completion 下降 17 點，平均淨零 (@03:00)。Diff 只是一行 markdown，行為變化（多餘步驟、sub-agent 協作、tool 呼叫軌跡）只存在 trace：diff 告訴你改了什麼，trace 告訴你發生什麼 (@05:00)。[Jakovcevic]
+- 改善一個維度不等於整體變好。講者的假設情境：在 support agent prompt 加一行「執行任何動作前先確認」，action safety 上升 17 點、task completion 下降 17 點，平均淨零 (@03:00)。Diff 只是一行 markdown，行為變化（多餘步驟、subagent 協作、tool 呼叫軌跡）只存在 trace：diff 告訴你改了什麼，trace 告訴你發生什麼 (@05:00)。[Jakovcevic]
 - 五步 regression loop：dataset 直接取 production trace 不用合成，涵蓋一般流程、已知失敗、edge case 與容易被忘的「要保護的成功流程」(@06:30)；evaluator 把 hallucination、accuracy、tool trajectory、step efficiency 轉成 0/1 或多級分數，確定性用 code evaluator、非確定性用 LLM judge (@08:00)；baseline 後只改一個東西（prompt、handoff、tool、模型）重跑比較，換貴五倍的模型要靠數字證明 ROI (@09:45)。demo 的實驗比較圖顯示整體 action safety +18、task completion +6 (@12:00)，playground 另用一個 100 筆的資料集示範 (@13:00)；每個失敗都變成新的 regression 測試 (@17:00)。[Jakovcevic]
 - 歷史 PR 資料集：講者引 Greptile 內部數據，約每 1,000 個 PR（講者也說可能是每 1,000 行）才有 1 個災難級 bug，不做資料集就看不出 review agent 退步；bug 型態會變，約 80 到 90% 是舊錯誤重現，新的 agent 會犯新型態錯誤，所以要持續更新 (@07:00)。[Gupta]
 - 所有 production session 都 trace 並成為回歸資料集，可把整個 session 存成 dataset 重播某一 turn；用 experiments 對 harness 變更做 A/B (@15:01)。[F.Ali]
@@ -70,7 +70,8 @@
 ## 相關筆記
 
 - [harness-engineering.md](harness-engineering.md)：Harness 實作做法總覽與完整來源索引
-- [agent-security.md](agent-security.md)：沙箱、權限與憑證
+- [agent-security.md](agent-security.md)：沙箱、憑證、權限、prompt injection 與身分授權
+- [agent-observability.md](agent-observability.md)：trace 的 OTel 慣例與自架後端（trace 是 eval 的原料）
 
 ## 來源
 

@@ -1,6 +1,6 @@
 # Spec-driven development：spec-kit、Kiro 與 Böckeler 的評析
 
-本篇整理 spec-driven development（SDD）的定義分級、spec-kit 與 Kiro 的流程、Birgitta Böckeler（刊於 martinfowler.com）的疑慮，以及與 superpowers、compound engineering 的對照；資料取得日期 2026-10-14，內文的 `[簡稱]` 對應文末來源表。2026-11-12 補入 AI Engineer 頻道 2026-10 至 2026-11 上傳的新影片（由 Claude Sonnet 讀逐字稿摘要後併入，未逐支回看影片）。
+本篇整理 spec-driven development（SDD）的定義分級、spec-kit 與 Kiro 的流程、Birgitta Böckeler（刊於 martinfowler.com）的疑慮，以及與 superpowers、compound engineering 的對照；資料取得日期 2026-10-14，內文的 `[簡稱]` 對應文末來源表。2026-11-12 補入 AI Engineer 頻道 2026-10 至 2026-11 上傳的新影片（由 Claude Sonnet 讀逐字稿摘要後併入，未逐支回看影片；內文的 (@mm:ss) 是影片時間點，依字幕標記估計，誤差約一分鐘）。
 
 ## SDD 是什麼
 
@@ -26,7 +26,7 @@
 ## Kiro：三份文件與工作流
 
 - 每個 spec 產生三份檔案：`requirements.md`（bug 時為 `bugfix.md`）、`design.md`、`tasks.md`；工作流為 Requirements → Design → Tasks 三階段。[Kiro-Specs]
-- Feature Specs 有兩種變體：Requirements-First（從系統行為出發，再產生 design 與 tasks；適合產品導向、架構彈性的情況）與 Design-First（從架構或偽代碼出發，再導出 requirements 與 tasks；適合有嚴格非功能需求、移植既有設計文件、先驗證技術可行性）。[Kiro-Feature]
+- Feature Specs 有兩種變體：Requirements-First（從系統行為出發，再產生 design 與 tasks；適合產品導向、架構彈性的情況）與 Design-First（從架構或虛擬碼出發，再導出 requirements 與 tasks；適合有嚴格非功能需求、移植既有設計文件、先驗證技術可行性）。[Kiro-Feature]
 - 兩者的取捨：Requirements-First 確保期望行為被明確寫下，實作可調整；Design-First 確保技術可行，需求可調整。[Kiro-Feature]
 - `requirements.md` 使用 EARS 句型（`WHEN [條件] THE SYSTEM SHALL [行為]`），文件宣稱可測試、可追溯。[Kiro-Feature]
 - 在進入 design 前可用 Analyze Requirements 檢查需求的矛盾、含糊、衝突與缺漏（文件列為 IDE 與 CLI 功能）。[Kiro-Feature] [Kiro-Specs]
@@ -87,7 +87,7 @@
 
 - [agentic-engineering-patterns.md](agentic-engineering-patterns.md)：agent 開發工作流的模式，SDD 是其中「先計畫再執行」的一種具體做法。
 - [harness-engineering.md](harness-engineering.md)：規則檔、skill、hook 等 harness 元件；constitution 與 steering 屬於同類。
-- [prompt-to-graph.md](prompt-to-graph.md)：把 prompt 流程改成圖狀流程，可對照 SDD 的固定階段。
+- [prompt-to-graph.md](prompt-to-graph.md)：Prompt 到 Graph 的五層發展史；SDD 的固定階段可對照 Loop、Graph 層的 gate。
 - [../README.md](../README.md)：書籤區收有 superpowers 與 compound engineering。
 
 ## 來源
@@ -103,4 +103,4 @@
 | CompoundEng | [EveryInc/compound-engineering-plugin README](https://github.com/EveryInc/compound-engineering-plugin/blob/main/README.md) | 部分（Philosophy、The loop、Try it、Skills；略過安裝）；廠商性質 |
 | Kotyal | [Your Spec Has Bugs. Catch Them Before Your Agent Codes., Rajath Mahendrappa Kotyal (AWS)](https://www.youtube.com/watch?v=0EnLxIbAvYk) | 全文 (agent 摘要，2026-11)；廠商性質 |
 | OpenProse | [Stop Telling Agents How, OpenProse 團隊](https://www.youtube.com/watch?v=7T-gldvgfpo) | 全文 (agent 摘要，2026-11)；廠商性質 |
-| Harrysson | [What the Top Companies Do Differently With AI Coding, Martin Harrysson (McKinsey)](https://www.youtube.com/watch?v=21tuT-e4NVo) | 全文 (agent 摘要，2026-11) |
+| Harrysson | [What the Top Companies Do Differently With AI Coding, Martin Harrysson 與 Prakhar Dixit (McKinsey)](https://www.youtube.com/watch?v=21tuT-e4NVo) | 全文 (agent 摘要，2026-11) |

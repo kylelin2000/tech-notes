@@ -1,6 +1,6 @@
 # Agent 工具：寫給 agent 用的工具與 MCP server 設計
 
-本篇整理設計給 agent 使用的工具與 MCP server 的做法（工具切分、回傳內容、錯誤、評估迭代、工具過多時的處理、MCP spec 2026-07-28 版的實作重點、官方 servers repo），資料取得日期 2026-10-14。2026-11-12 補入 AI Engineer 頻道 2026-10 至 2026-11 上傳的新影片（由 Claude Sonnet 讀逐字稿摘要後併入，未逐支回看影片）。內文的 `[簡稱]` 對應文末「來源」表。
+本篇整理設計給 agent 使用的工具與 MCP server 的做法（工具切分、回傳內容、錯誤、評估迭代、工具過多時的處理、MCP spec 2026-07-28 版的實作重點、官方 servers repo），資料取得日期 2026-10-14。2026-11-12 補入 AI Engineer 頻道 2026-10 至 2026-11 上傳的新影片（由 Claude Sonnet 讀逐字稿摘要後併入，未逐支回看影片；內文的 (@mm:ss) 是影片時間點，依字幕標記估計，誤差約一分鐘）。內文的 `[簡稱]` 對應文末「來源」表。
 
 ## 工具切分與命名
 
@@ -64,7 +64,7 @@
 - 講者列的四個理由：漸進揭露、可組合性（串接、fan-out）、token 效率（程式裡裁切輸出）、emergent behavior（agent 自行造工具；例如移除記錄中的 PII，在 context 內做會洩漏信用卡號，寫程式處理則不會）(@04:00)。[M.King]
 - Arize 在 Phoenix 的演進：從 Bash 開始（sed、grep 加自家 CLI，輸出可存檔），加 Python sandbox，把 REST CRUD endpoint 提升成程式內可組合的 API，再加 SQL 做聚合（如 P95 latency 的 LLM span），避免逐頁翻 trace (@06:01)；也把 UI 操作做成 web worker 內的程式範式，雙向綁定瀏覽器 (@07:00)。[M.King]
 - 風險與營運成本（補充上面的代價）：LLM 產生的程式碼、sandbox 資源與 egress、secret 不可回到 context、權限常過寬 (@08:00)；除錯變成除錯程式碼、工具參數變程式碼因此準確度要求更高、discovery 多一步 handshake、MCP 與 harness 都做 code mode 會有雙重 sandbox 與重複的 JSON 序列化 (@09:02)。[M.King]
-- 未解問題：程式中途失敗無法從該步驟 resume；JavaScript 擅長 LLM 但不利數學；圖片等二進位要用簽名 URL 之類方式交出 sandbox；小模型可能能力不足，講者稱 frontier 模型在 code mode 表現最好 (@10:01)。[M.King]
+- 未解問題：程式中途失敗無法從該步驟 resume；LLM 擅長寫 JavaScript，但 JavaScript 不利數學；圖片等二進位要用簽名 URL 之類方式交出 sandbox；小模型可能能力不足，講者稱 frontier 模型在 code mode 表現最好 (@10:01)。[M.King]
 
 ## 給 agent 用的 CLI
 
@@ -80,7 +80,7 @@
 - Pipe 會吃掉錯誤：沒開 pipefail 時 pipeline 回傳最後一個指令的 exit code，`cargo test | head` 可能顯示成功；tail 只看到三行無害輸出就漏掉錯誤。做法是失敗時最後幾行放簡短摘要加完整 log 路徑 (@02:02)。[Bhardwaj-CLI]
 - 講者自己的工具稽核：80% 的 session 查詢輸出被接 filter，且 83% 的 pipe 是同一子指令加同樣 pipe 工具、出現至少 10 次的固定模式，所以該內建成旗標 (@03:00)。輸出大小上限不等於選擇：一個 120 萬字元的 session，搜尋命中附近只要約 3,000 字元，要提供只讀命中周圍、只要最後幾則、compact 模式（一行一筆，比 JSON 小約 6 倍）等選擇旗標，而不是只加截斷 (@04:02)。[Bhardwaj-CLI]
 - 外部佐證（講者轉述文章，細節字幕未明說）：Infracost 把 jq/Python 過濾搬進 CLI、加 compact 格式與 skill，六題難題從 0/6 變 6/6，整個 benchmark 成本降 41% (@06:00)。[Bhardwaj-CLI]
-- Skill.md、help 文字、錯誤訊息就是介面，agent 照字面執行：講者把 `--deep` 旗標改成 no-op 但 skill 沒改，95 次搜尋 95 次仍傳該旗標，改寫 skill 後為 0 次；新旗標到位後 pipe 讀取比例從 82% 降到約四分之一 (@06:00)。旗標要被用到才有效：55% 的 pipeline 只有 tail 或 sed，先出 range 與 limit 旗標；GitHub CLI 的 `list --limit` agent 用 81%，cargo test quiet 模式只有約十分之一會用，要在 help 與 skill 教；大輸出預設少印並寫「showing 20 of 300, 加 offset 20 看下一段」(@08:01)。[Bhardwaj-CLI]
+- SKILL.md、help 文字、錯誤訊息就是介面，agent 照字面執行：講者把 `--deep` 旗標改成 no-op 但 skill 沒改，95 次搜尋 95 次仍傳該旗標，改寫 skill 後為 0 次；新旗標到位後 pipe 讀取比例從 82% 降到約四分之一 (@06:00)。旗標要被用到才有效：55% 的 pipeline 只有 tail 或 sed，先出 range 與 limit 旗標；GitHub CLI 的 `list --limit` agent 用 81%，cargo test quiet 模式只有約十分之一會用，要在 help 與 skill 教；大輸出預設少印並寫「showing 20 of 300, 加 offset 20 看下一段」(@08:01)。[Bhardwaj-CLI]
 - Agent mode：許多 harness 會設環境變數，CLI 可偵測後輸出不同格式。DuckDB 的做法是給純文字表格並說明省略幾列與如何取回、超大查詢提早停並明說、錯誤用 JSON；模型讀入的輸出少 59%，但只佔總 token 約 0.5%，成本與時間沒變，所以要量 turn 數與答對率，不只量 token (@09:02)。[Bhardwaj-CLI]
 - 不要全丟給 agent 設計：agent 設計給 agent 用的工具傾向想像成人用再外掛。講者引用的研究稱多數官方 MCP server 只是包 API、97% 的真實 MCP tool description 有問題、agent 自己寫的 context file 沒提升成功率且更貴（未查證原研究）；合理分工是人決定工具該長怎樣，讓 agent 對照真實 transcript 檢查 (@10:01)。[Bhardwaj-CLI]
 
@@ -94,26 +94,40 @@
 
 ## MCP spec 重點（2026-07-28 版）
 
+### 核心變更
+
 - 相對前版 2025-11-25 的重大變更：移除 protocol-level session 與 `Mcp-Session-Id`，移除 initialize 握手，每個請求在 `_meta` 帶 protocol version 與 client capabilities；server 必須實作 `server/discover`；所有結果帶必填的 `resultType`；server 發起的請求改為 Multi Round-Trip Requests（`input_required`）。[MCP-Changelog]
 - 其他影響 server 實作者的變更：`tools/list` 等 list 結果須帶 `ttlMs` 與 `cacheScope`；Streamable HTTP POST 須帶 `Mcp-Method`、`Mcp-Name` header；移除 SSE 串流續傳（斷線後 client 須用新 request ID 重發）；tasks 移到 extension。[MCP-Changelog]
 - 已標為 Deprecated 的有 Roots、Sampling、Logging、HTTP+SSE transport，以及 Dynamic Client Registration（改推 Client ID Metadata Documents）；新實作不應採用。[MCP-Changelog]
+
+### Tools 與 schema
+
 - `tools/list`：結果不得隨連線或其他請求的副作用而變，但可依請求帶的授權（例如 scope）而不同；順序應固定，以利 client 快取與 prompt cache 命中。[MCP-Tools] [MCP-Changelog]
 - `inputSchema` 必須是有效的 JSON Schema 物件（預設 2020-12）；無參數工具建議用 `{"type":"object","additionalProperties":false}`；`outputSchema` 與 `inputSchema` 現已允許任意 JSON Schema 2020-12 關鍵字。[MCP-Tools] [MCP-Changelog]
 - `annotations` 描述工具行為，但 client 必須把它視為不可信，除非來自受信任的 server；Anthropic 文章提到它可揭露工具是否需 open-world 存取或有破壞性變更。[MCP-Tools] [Anthropic-Tools]
 - `x-mcp-header` 可把基本型別參數鏡射成 `Mcp-Param-{name}` header 給中間設備路由；不要標在密碼、API key、PII 等敏感參數上，因為 header 對中間設備可見。[MCP-Tools]
 - Server 的安全義務：驗證所有輸入、實作存取控制、對工具呼叫限速、清理輸出；client 應在敏感操作前徵求使用者確認。[MCP-Tools]
-- 講者經驗（非規格）：用遠端 MCP server 當全公司 skill 的 source of truth，由伺服器依角色與查詢套政策給出適合版本，內部用了約 6 個月，並提到 MCP 社群有 skills over MCP 工作小組、API 尚未定案 (@08:00)；選用 tools 而非 resources 送 skill，理由是 resources 的 client 支援不一，tools 幾乎處處可用 (@09:00)。[Wilinski]
+
+### 授權
+
 - Authorization 為選用；使用 HTTP transport 時才應依此 spec，stdio 應改從環境取得憑證。[MCP-Auth]
 - 角色：受保護的 MCP server 是 OAuth 2.1 resource server，MCP client 是 OAuth client，授權伺服器可與 server 同機或分離；server 必須實作 Protected Resource Metadata（RFC 9728），client 靠它發現授權伺服器。[MCP-Auth]
 - Client 必須在授權與 token 請求都帶 `resource`（RFC 8707），值為 MCP server 的 canonical URI；server 必須驗證 token 的 audience 是自己，只接受發給自己的 token，且不得接受或轉送其他 token。[MCP-Auth]
 - 每個 HTTP 請求都要帶 `Authorization: Bearer`；token 不可放 URI query；無效或過期回 401，scope 不足回 403 並在 `WWW-Authenticate` 帶 `error="insufficient_scope"`、`scope`、`resource_metadata`，且一次列出該操作需要的全部 scope。[MCP-Auth]
 - Scope 採最小權限：初始只給低風險的探索／讀取 scope，高權限操作首次出現時再用 scope 挑戰升權；避免在 `scopes_supported` 公布全部 scope、避免 `*` 之類的大包 scope、不要只因 token 帶了 scope 就略過伺服器端授權邏輯。[MCP-Security] [MCP-Auth]
+
+### 安全
+
 - Confused deputy（MCP proxy server 對第三方 API 使用 static client ID 並允許動態註冊時）：必須做 per-client consent（登記每位使用者核准的 `client_id`、同意頁顯示 client 名稱／scope／redirect_uri、CSRF 與防 iframe）、redirect_uri 精確比對、`state` 單次使用且在使用者同意後才設定；consent cookie 用 `__Host-` 前綴並綁定 client_id。[MCP-Security]
 - Token passthrough 明文禁止：server 不得接受未明確發給自己的 token，也不要把 client 的 token 原樣轉給下游；否則會繞過限速等控制、破壞稽核軌跡與信任邊界。[MCP-Security]
 - State handle hijacking（2026-07-28 版新增；拿掉 protocol session 後，對應 2025-11-25 版的 Session Hijacking 一節）：不能把「持有 handle」當成身分驗證；handle 用安全亂數產生、設有效期，並在伺服器端與已驗證使用者綁定（如以 `<user_id>:<handle>` 當 key，user ID 取自驗證過的 token）。[MCP-Security]
 - 授權回應的 `iss`（RFC 9207）：授權伺服器應回傳；client 必須在兌換 code 前與記錄的 issuer 做字串比對，以防 mix-up attack。[MCP-Auth] [MCP-Security]
 - 本機 server：用 stdio 限制只有 client 可存取；若走 HTTP，要求 token 或改用權限受限的 unix domain socket。[MCP-Security]
 - Client 端 SSRF（OAuth discovery 的 URL 可能指向內網或雲端 metadata）：要求 HTTPS、擋私有／link-local IP、驗證 redirect 目標、必要時用 egress proxy；不要自己手寫 IP 驗證。支援 Client ID Metadata Documents 的授權伺服器同樣要防。[MCP-Security]
+
+### 講者經驗（非規格）
+
+- 用遠端 MCP server 當全公司 skill 的 source of truth，由伺服器依角色與查詢套政策給出適合版本，內部用了約 6 個月，並提到 MCP 社群有 skills over MCP 工作小組、API 尚未定案 (@08:00)；選用 tools 而非 resources 送 skill，理由是 resources 的 client 支援不一，tools 幾乎處處可用 (@09:00)。[Wilinski]
 
 ## 官方 servers repo
 
@@ -167,7 +181,7 @@
 ## 相關筆記
 
 - [harness-engineering.md](harness-engineering.md#工具-tools-與-skills)：harness 層的工具取捨（tools、bash、code gen）與 skills。
-- [agent-security.md](agent-security.md)：沙箱、權限與憑證，與本篇 MCP 授權／token 邊界互補。
+- [agent-security.md](agent-security.md)：沙箱、憑證、權限、prompt injection 與身分授權，與本篇 MCP 授權／token 邊界互補。
 - [../../work-experience/hermes-agent.md](../../work-experience/hermes-agent.md)：Hermes 的 Tool Broker 就是一個 MCP server，持有憑證並作為內部資源的單一出口。
 
 ## 來源

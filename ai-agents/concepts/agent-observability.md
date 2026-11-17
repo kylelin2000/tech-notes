@@ -13,16 +13,16 @@
 
 - GenAI span 代表呼叫端觀察到的邏輯操作，涵蓋從發起到收到完整回應（或錯誤、取消）；自動重試要算在同一個 span 內。[OTel-Spans]
 - 操作類型由 `gen_ai.operation.name` 決定，已定義值包括 `chat`、`generate_content`、`text_completion`、`embeddings`、`retrieval`、`execute_tool`、`create_agent`、`invoke_agent`、`invoke_workflow`、`plan`，以及一組 memory 相關操作（`create_memory`、`search_memory` 等）。[OTel-Spans]
-- Inference span（`gen_ai.client.inference`，Status Development）代表對模型或服務的一次呼叫，產生回應或要求 tool call。Span name 為 `{gen_ai.operation.name} {gen_ai.request.model}`，kind 為 `CLIENT`；呼叫同進程內的模型時可用 `INTERNAL`。必填屬性是 `gen_ai.operation.name`（如 `chat`）與 `gen_ai.provider.name`；`gen_ai.request.model`、`gen_ai.conversation.id`、`gen_ai.output.type`、`gen_ai.request.stream` 等為條件必填；建議屬性包括 `gen_ai.request.{max_tokens,temperature,top_p}`、`gen_ai.response.{id,model,finish_reasons}`、`gen_ai.usage.{input_tokens,output_tokens}`（另有 cache_read、cache_write、reasoning 與各 modality 的細分）。`gen_ai.input.messages`、`gen_ai.output.messages`、`gen_ai.system_instructions`、`gen_ai.tool.definitions` 為 Opt-In。[OTel-Inference]
+- Inference span（`gen_ai.client.inference`，Status Development）代表對模型或服務的一次呼叫，產生回應或要求 tool call。Span name 為 `{gen_ai.operation.name} {gen_ai.request.model}`，kind 為 `CLIENT`；呼叫同行程內的模型時可用 `INTERNAL`。必填屬性是 `gen_ai.operation.name`（如 `chat`）與 `gen_ai.provider.name`；`gen_ai.request.model`、`gen_ai.conversation.id`、`gen_ai.output.type`、`gen_ai.request.stream` 等為條件必填；建議屬性包括 `gen_ai.request.{max_tokens,temperature,top_p}`、`gen_ai.response.{id,model,finish_reasons}`、`gen_ai.usage.{input_tokens,output_tokens}`（另有 cache_read、cache_write、reasoning 與各 modality 的細分）。`gen_ai.input.messages`、`gen_ai.output.messages`、`gen_ai.system_instructions`、`gen_ai.tool.definitions` 為 Opt-In。[OTel-Inference]
 - 命名與 kind 規則：
 
 | Span | operation.name | Span name | Span kind |
 | --- | --- | --- | --- |
-| Inference | `chat`、`generate_content`、`text_completion` 等 | `{gen_ai.operation.name} {gen_ai.request.model}` | `CLIENT`（同進程可 `INTERNAL`） |
+| Inference | `chat`、`generate_content`、`text_completion` 等 | `{gen_ai.operation.name} {gen_ai.request.model}` | `CLIENT`（同行程可 `INTERNAL`） |
 | Embeddings | `embeddings` | `{gen_ai.operation.name} {gen_ai.request.model}` | `CLIENT` |
 | Create agent | `create_agent` | `create_agent {gen_ai.agent.name}` | `CLIENT` |
 | Invoke agent（遠端服務，如 OpenAI Assistants、Bedrock Agents） | `invoke_agent` | `invoke_agent {gen_ai.agent.name}`，無名稱時 `invoke_agent` | `CLIENT` |
-| Invoke agent（同進程，如 LangChain、CrewAI） | `invoke_agent` | 同上 | `INTERNAL` |
+| Invoke agent（同行程，如 LangChain、CrewAI） | `invoke_agent` | 同上 | `INTERNAL` |
 | Invoke workflow | `invoke_workflow` | `invoke_workflow {gen_ai.workflow.name}` | `INTERNAL` |
 | Plan | `plan` | `plan {gen_ai.agent.name}`，無名稱時 `plan` | `INTERNAL` |
 | Execute tool | `execute_tool` | `execute_tool {gen_ai.tool.name}` | `INTERNAL` |
@@ -49,7 +49,7 @@
 - `gen_ai.client.operation.duration`（Histogram，單位 `s`）記錄 GenAI 操作耗時；但不該用於 inference 操作，改用 `gen_ai.client.inference.duration`（Histogram，`s`，Development），另有 `gen_ai.client.inference.time_to_first_chunk` 與 `time_per_output_chunk`。[OTel-Metrics] [OTel-Inference]
 - Token 用量分兩族（Status Development）：`gen_ai.client.inference.usage.{input_tokens,output_tokens,cache_read.input_tokens,cache_write.input_tokens,reasoning.output_tokens}` 是 Counter、單位 `{token}`，用於總量與成本估算；`cache_read`、`cache_write`、`reasoning` 是 input / output 的子集。主要屬性：`gen_ai.operation.name`、`gen_ai.provider.name`、`gen_ai.token.modality`（text / image / audio）為 Required，`gen_ai.request.model` 為條件必填。[OTel-TokenMetrics]
 - 每次操作的分布用 `gen_ai.client.inference.operation.input_tokens` / `output_tokens`（Histogram，`{token}`）：只拿來看 p95 / p99 與離群值，不可用來算總量或成本；刻意不按 modality 拆分，因為跨 modality 的百分位數不能相加。[OTel-TokenMetrics]
-- Agent 層 metrics：`gen_ai.invoke_agent.duration`、`gen_ai.invoke_agent.inference_calls`、`gen_ai.invoke_agent.tool_calls`（後兩者為 Histogram，建議 bucket `[1, 2, 4, 8, 16, 32, 64, 128]`，只計該 agent 自己發出的呼叫，sub-agent 的算在其自己的 invocation），以及 `gen_ai.execute_tool.duration`、`gen_ai.invoke_workflow.duration`。[OTel-Metrics]
+- Agent 層 metrics：`gen_ai.invoke_agent.duration`、`gen_ai.invoke_agent.inference_calls`、`gen_ai.invoke_agent.tool_calls`（後兩者為 Histogram，建議 bucket `[1, 2, 4, 8, 16, 32, 64, 128]`，只計該 agent 自己發出的呼叫，subagent 的算在其自己的 invocation），以及 `gen_ai.execute_tool.duration`、`gen_ai.invoke_workflow.duration`。[OTel-Metrics]
 - 模型服務端 metrics：`gen_ai.server.request.duration`、`gen_ai.server.time_per_output_token`、`gen_ai.server.time_to_first_token`。[OTel-Metrics]
 - Events：events 文件定義 `gen_ai.evaluation.result`（Development），記錄對 GenAI 輸出的評估結果，屬性含 `gen_ai.evaluation.name`（Required）、`gen_ai.evaluation.score.value`、`gen_ai.evaluation.score.label`、`gen_ai.evaluation.explanation`；應盡量掛在被評估的 GenAI span 底下，否則用 `gen_ai.response.id` 關聯。這讓線上評估分數可以回貼到 trace（本筆記推論）。[OTel-Events]
 - Events 在部分語言尚未可用，需查 spec-compliance matrix。[OTel-Events]

@@ -1,6 +1,6 @@
 # API 層基本元件：structured outputs、tool calling、prompt caching
 
-本篇整理在 Claude API 與 OpenAI API 上建 agent 時最常碰到的三個 API 層元件：structured outputs、tool calling schema、prompt caching。來源全是兩家的官方文件（廠商性質），資料取得日期 2026-10-14；2026-11-12 補入 AI Engineer 頻道 2026-10 至 2026-11 上傳的新影片（由 Claude Sonnet 讀逐字稿摘要後併入，未逐支回看影片），這些講者的實測與主張只放在「講者的實測與主張」小節，與官方規格分開；模型名稱、價格與限制以文件當時的內容為準，會隨版本變動。內文的 `[簡稱]` 對應文末「來源」表。
+本篇整理在 Claude API 與 OpenAI API 上建 agent 時最常碰到的三個 API 層元件：structured outputs、tool calling schema、prompt caching。來源全是兩家的官方文件（廠商性質），資料取得日期 2026-10-14；2026-11-12 補入 AI Engineer 頻道 2026-10 至 2026-11 上傳的新影片（由 Claude Sonnet 讀逐字稿摘要後併入，未逐支回看影片；內文的 (@mm:ss) 是影片時間點，依字幕標記估計，誤差約一分鐘），這些講者的實測與主張只放在「講者的實測與主張」小節，與官方規格分開；模型名稱、價格與限制以文件當時的內容為準，會隨版本變動。內文的 `[簡稱]` 對應文末「來源」表。
 
 ## Structured outputs
 
